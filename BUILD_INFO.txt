@@ -1,7 +1,0 @@
-Project: PS5 Jailbreak Doctor
-Version: 0.7.5
-Build route: GitHub Actions / Windows runner / PyInstaller CLI one-file
-Expected output: dist/PS5JailbreakDoctor.exe
-Distribution: GitHub Actions artifact for CI runs; executable and SHA-256 attached to GitHub Releases
-End-user requirements: no Python installation and no BAT files for the compiled release
-Stale spec avoidance: generated spec is stored outside the repository
