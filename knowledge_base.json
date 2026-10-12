@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "database_version": "2026.10.12.7",
+  "database_version": "2026.10.12.5",
   "generated_at": "2026-10-12",
   "language": "pt-PT",
-  "description": "Base de conhecimento local e expansível. Entradas diferenciam relatos comunitários, documentação e heurísticas; nenhuma sugestão é tratada como correção universal. A versão 2026.10.12.7 recomenda o relay local do PS5 Jailbreak Doctor para recolha de logs sem editar config.ini, mantendo a alternativa de acesso LAN direto documentada.",
+  "description": "Base de conhecimento local e expansível. Revisão de 2026-10-12: incorpora o estado atual de issues públicas do ShadowMountPlus, notas de compatibilidade por combinação exata, verificação da profundidade/caminhos de scan e deteção de Title IDs duplicados. Relatos comunitários não são tratados como correções universais; regras usam traduções incorporadas para permitir atualizações sem recompilar a aplicação.",
   "rules": [
     {
       "id": "SHADOW_TITLE_DIR",
@@ -207,32 +207,30 @@
         "errno\\s*111",
         "winerror\\s*10061"
       ],
-      "summary": "Uma ligação TCP foi recusada. O serviço pode estar inativo, a API pode estar desativada, ou o endereço/porta podem não corresponder. No Doctor, o modo recomendado é o Relay ELF: usa a API local do ShadowMountPlus sem alterar config.ini.",
+      "summary": "Uma ligação TCP foi recusada. Isso pode significar que o serviço não está ativo, está ligado apenas a localhost, ou a porta/endereço não correspondem.",
       "steps": [
-        "Confirma que o ShadowMountPlus/etaHEN está ativo e que o IP atual da PS5 corresponde ao da rede local.",
-        "Primeiro, usa no Doctor «Relay ELF» e «Ligação automática (sem config.ini)». O relay é enviado pelo loader de payloads e lê a API local; não escreve em config.ini.",
-        "Se preferires a ligação direta, a API do ShadowMountPlus usa 127.0.0.1:10101 por defeito. O acesso a partir do PC requer que a API aceite ligações LAN; em versões compatíveis, usa a opção LAN na interface do ShadowMountPlus. Se tiveres de configurar manualmente, api_bind_address=0.0.0.0 aceita LAN e loopback; evita definir apenas o IP específico da consola porque o launcher local pode depender de 127.0.0.1.",
-        "A API/relay não tem autenticação de utilizador. Usa uma rede privada de confiança e nunca encaminhes as portas para a Internet."
+        "Confirma que o payload/serviço esperado está a correr e que o endereço IP da PS5 não mudou.",
+        "Para a API do ShadowMountPlus, a documentação indica a porta 10101 por defeito e bind local 127.0.0.1 por defeito.",
+        "A API não tem autenticação: só a exponhas à LAN se confiares na rede e nunca a encaminhes para a Internet."
       ],
       "fix_type": "guia",
       "evidence_status": "documentacao_tecnica",
       "sources": [
         "https://github.com/drakmor/ShadowMountPlus/blob/1.7/docs/api.md"
       ],
-      "applicability": "Ligação PC-PS5 à API HTTP do ShadowMountPlus. O erro pode resultar de API inativa, bind local, IP/porta incorretos ou versão sem o endpoint esperado. O relay oferece uma alternativa sem editar a configuração.",
-      "fix_summary": "Solução preferida: ativa o Relay ELF a partir do Doctor, que encaminha apenas endpoints de leitura e não altera config.ini. Alternativa: ativa o acesso LAN na interface do ShadowMountPlus ou configura o listener para 0.0.0.0, mantendo a segurança da rede privada.",
+      "applicability": "Ligação entre PC e API HTTP do ShadowMountPlus.",
+      "fix_summary": "Verifica IP/porta e se a API aceita ligações LAN. A API não tem autenticação; nunca a exponhas à Internet.",
       "translations": {
         "en": {
           "title": "Connection refused by the PS5 local service",
-          "summary": "A TCP connection was refused. The service may be inactive, the API may be disabled, or the address/port may not match. In Doctor, the recommended mode is the ELF Relay: it uses ShadowMountPlus' local API without modifying config.ini.",
+          "summary": "A TCP connection was refused. The service may not be running, may only be bound to localhost, or the address/port may be incorrect.",
           "steps": [
-            "Confirm that ShadowMountPlus/etaHEN is running and that the PS5 IP matches the current local network.",
-            "First, select 'ELF relay' and 'Connect automatically (no config.ini)' in Doctor. The relay is sent through the payload loader and reads the local API; it does not write to config.ini.",
-            "If you prefer direct connection, ShadowMountPlus' API defaults to 127.0.0.1:10101. PC access requires the API to accept LAN connections; on compatible versions, use the LAN option in ShadowMountPlus' interface. If manual configuration is unavoidable, api_bind_address=0.0.0.0 accepts LAN and loopback; avoid binding only to the console-specific IP because the local launcher may rely on 127.0.0.1.",
-            "The API/relay has no user authentication. Use a trusted private network and never forward its ports to the Internet."
+            "Confirm the expected payload/service is running and that the PS5 IP address has not changed.",
+            "For the ShadowMountPlus API, the documentation lists port 10101 and a default local bind of 127.0.0.1.",
+            "The API has no authentication: expose it to the LAN only if you trust the network, and never forward it to the Internet."
           ],
-          "fix_summary": "Preferred solution: activate the ELF Relay from Doctor. It forwards only read-only endpoints and does not modify config.ini. Alternative: enable LAN access in the ShadowMountPlus interface or configure the listener for 0.0.0.0, while keeping the network private.",
-          "applicability": "PC-to-PS5 connection to the ShadowMountPlus HTTP API. The error may result from an inactive API, local bind, incorrect IP/port, or a version without the expected endpoint. The relay provides an alternative without editing configuration."
+          "fix_summary": "Check the IP/port and whether the API accepts LAN connections. The API has no authentication; never expose it to the Internet.",
+          "applicability": "Connection between the PC and the ShadowMountPlus HTTP API."
         }
       }
     },

@@ -6,7 +6,7 @@
 
 [README principal do GitHub](README.md) · [English](README_EN.md)
 
-![Resultados de diagnóstico com dados de exemplo](./docs/images/diagnostic-results.png)
+![Resultados de diagnóstico com dados de exemplo](./docs/images/dashboard-pt.png)
 
 *Captura ilustrativa da vista de resultados com dados de exemplo — não significa que estes erros estejam presentes em todas as consolas.*
 
@@ -49,25 +49,17 @@ A análise de logs importados funciona localmente e não exige ligação à cons
 4. Abre cada resultado para ver as linhas encontradas, as limitações e os próximos passos.
 5. Guarda um relatório para o partilhares num tópico ou com os mantenedores da ferramenta relevante.
 
-### Obter logs diretamente da PS5 (modo recomendado)
+### Obter logs diretamente da PS5
 
-1. Confirma que o ShadowMountPlus está a funcionar e que a API está ativa. A configuração predefinida do ShadowMountPlus 1.7 tem `api_enabled=1` e `api_bind_address=127.0.0.1`.
-2. No separador **Ligação à PS5**, deixa selecionado **Relay ELF (sem alterar config.ini)**. Se ainda não existir um IP guardado, introduz o IP LAN atual da PS5; fica guardado nas preferências locais do Doctor.
-3. Confirma que o loader de payloads compatível está ativo na consola (normalmente recebe payloads na porta TCP `9021`) e clica em **Ligação automática (sem config.ini)**.
-4. O Doctor procura primeiro um relay ativo. Se não encontrar nenhum, envia o ELF incluído para o endereço da PS5 e espera que o relay inicie. A ligação usa a porta TCP `10102` e a descoberta automática usa UDP `10103`.
-5. Quando aparecer **Ligação confirmada**, clica em **Obter logs e analisar**.
-
-O relay lê `/data/shadowmount/config.ini`, mas nunca o altera. Se o ShadowMountPlus estiver configurado para escutar apenas no IP LAN específico da consola, o relay também tenta disponibilizar localmente `127.0.0.1:10101` para que o launcher integrado continue a funcionar. Depois de um reinício completo da PS5, o relay tem de ser carregado novamente, a menos que uses um autoloader de payloads.
-
-Se a descoberta por broadcast for bloqueada pela rede/firewall, a aplicação tenta ligar diretamente ao IP guardado. Se o loader da porta `9021` não estiver ativo, carrega `PS5JailbreakDoctorRelay.elf` através do loader existente e volta a clicar em **Procurar relay na rede**. Se a API estiver explicitamente desativada (`api_enabled=0`), o relay não a ativa nem edita a configuração; será necessário ativá-la através de uma opção oficial disponível na versão instalada ou reconfigurá-la manualmente.
-
-### Modo de API direta (alternativa)
-
-O modo **API direta** destina-se a versões/configurações do ShadowMountPlus que já permitem ligações a partir da rede local. A API HTTP padrão escuta apenas em `127.0.0.1:10101`; nesse estado, o PC não consegue aceder diretamente. Em versões com o controlo LAN na interface do ShadowMountPlus, usa essa opção em vez de editar ficheiros. A configuração manual `api_bind_address=0.0.0.0` continua a ser uma alternativa, mas não é necessária no modo Relay ELF.
+1. Inicia o ShadowMountPlus na consola e confirma que a API está ativa.
+2. Se a tua versão o exigir, configura a API para aceitar ligações através de uma interface de rede local, em vez de apenas `127.0.0.1`.
+3. Na barra de ligação no topo da janela, indica o IP LAN atual da PS5 e a porta da API. A aplicação usa `10101` por defeito, mas a configuração pode ser diferente.
+4. Clica em **Testar ligação**. Quando a aplicação confirmar a ligação, escolhe **Obter logs da PS5** e depois **Analisar logs**.
+5. Consulta os resultados e exporta um relatório se precisares de ajuda.
 
 ### Segurança da ligação
 
-A API do ShadowMountPlus e o relay não usam autenticação de utilizador. O relay aceita clientes de endereços IPv4 privados e expõe apenas endpoints de leitura de versão, logs e configuração do scanner; ainda assim, os logs podem conter identificadores. Usa apenas uma rede privada de confiança e nunca encaminhes as portas TCP `10102` ou UDP `10103` no router, nem exponhas a API à Internet.
+A integração usa a API do ShadowMountPlus, incluindo `/api/v1/version`, `/api/v1/debug-log` e `/api/v1/kernel-log`. A API não tem autenticação na integração suportada. Mantém-na limitada a uma rede local de confiança, nunca encaminhes a porta no router e não a exponhas à Internet. A aplicação não configura a API pela tua conta.
 
 ## Como interpretar os resultados
 
@@ -95,7 +87,7 @@ O ficheiro `updates.json` tem de ser publicado em conjunto com a versão corresp
 
 ### Executável Windows
 
-Na página **Releases** do repositório, descarrega `PS5HomebrewDoctor.exe` da versão mais recente. O executável compilado não exige Python nem ficheiros `.bat` no computador do utilizador.
+Na página **Releases** do repositório, descarrega `PS5JailbreakDoctor.exe` da versão mais recente. O executável compilado não exige Python nem ficheiros `.bat` no computador do utilizador.
 
 O workflow do GitHub Actions compila o programa para Windows x64 e, quando é publicada uma Release, anexa o executável e o respetivo ficheiro SHA-256. O executável não tem assinatura comercial; o Windows SmartScreen pode mostrar um aviso.
 
@@ -111,14 +103,12 @@ py -3.12 app.py
 
 Para a compilação documentada, utiliza Python 3.12 e instala o PyInstaller:
 
-Para incluir a ligação automática, compila primeiro `ps5-relay/relay.c` com o [PS5 Payload SDK oficial](https://github.com/ps5-payload-dev/sdk) e coloca o resultado em `ps5-relay/build/PS5JailbreakDoctorRelay.elf`. Depois usa:
-
 ```powershell
 py -3.12 -m pip install --upgrade pyinstaller
-py -3.12 -m PyInstaller --noconfirm --clean --onefile --windowed --name PS5HomebrewDoctor --add-data "knowledge_base.json;." --add-data "ps5-relay/build/PS5JailbreakDoctorRelay.elf;payloads" app.py
+py -3.12 -m PyInstaller --noconfirm --clean --onefile --windowed --name PS5JailbreakDoctor --add-data "knowledge_base.json;." app.py
 ```
 
-O ficheiro resultante é criado em `dist\PS5HomebrewDoctor.exe`. O workflow incluído em `.github/workflows/build-windows-exe.yml` é recomendado para publicações oficiais: compila o relay ELF com uma versão fixada do SDK, valida os ficheiros, inclui a base de conhecimento, executa os testes de regressão e anexa checksums SHA-256.
+O ficheiro resultante é criado em `dist\PS5JailbreakDoctor.exe`. Para publicações oficiais, recomenda-se o workflow incluído em `.github/workflows/build-windows-exe.yml`, que valida os ficheiros, inclui a base de conhecimento e anexa um checksum SHA-256 à Release.
 
 ## Estrutura do projeto
 
@@ -130,12 +120,10 @@ O ficheiro resultante é criado em `dist\PS5HomebrewDoctor.exe`. O workflow incl
 | `safe_actions.py` | Conjunto limitado de renomeações locais reversíveis |
 | `i18n.py` | Textos da interface em português e inglês |
 | `updates.py` / `updates.json` | Atualizações explícitas da base com verificação SHA-256 |
-| `relay_client.py` | Descoberta do relay e carregamento através de um loader de payloads compatível |
-| `ps5-relay/relay.c` | Relay LAN só de leitura e alias local para o ShadowMountPlus |
 | `UPDATES.md` | Guia para publicar atualizações da base de diagnósticos |
 | `tests/` | Testes de regressão para traduções, diagnósticos e atualizações |
 | `CHANGELOG.md` | Alterações do projeto organizadas por versão |
-| `.github/workflows/build-windows-exe.yml` | Compila o relay ELF e o EXE para Windows x64 |
+| `.github/workflows/build-windows-exe.yml` | Compilação do EXE para Windows x64 |
 | `FONTES_PT.md` | Referências públicas usadas nas regras da base de conhecimento |
 
 ## Limitações conhecidas

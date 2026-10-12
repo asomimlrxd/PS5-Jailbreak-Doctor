@@ -23,8 +23,6 @@ from safe_actions import list_actions, rename_for_rule, rollback_action
 from session_utils import format_source_blocks
 from app_paths import data_path
 from updates import check_for_updates, download_update, install_update, latest_backup, restore_last_backup, UpdateError
-from relay_client import (discover_relay, send_relay_elf, RelayError, RELAY_PORT, LOADER_PORT,
-                           preferred_connection_mode, preferred_connection_port)
 from i18n import set_language as set_ui_language, tr, register_knowledge_base, install_tkinter_translation
 
 register_knowledge_base(KNOWLEDGE_BASE)
@@ -230,9 +228,6 @@ class DoctorApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.settings = self._load_settings()
-        saved_connection_mode = preferred_connection_mode(self.settings)
-        # Relay mode is the default for fresh and legacy installs: no config.ini edits.
-        self.settings["connection_mode"] = saved_connection_mode
         self.language = "en" if self.settings.get("language") == "en" else "pt"
         set_ui_language(self.language)
         _set_context_option_language(self.language)
@@ -241,8 +236,13 @@ class DoctorApp(tk.Tk):
             self.theme_name = DEFAULT_THEME
         _set_palette(self.theme_name)
         self.title(f"PS5 Jailbreak Doctor v{APP_VERSION}")
-        self.geometry("1120x760")
-        self.minsize(920, 620)
+        # Choose a useful dashboard size without starting outside smaller Windows screens.
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        window_width = max(900, min(1400, screen_width - 30))
+        window_height = max(620, min(900, screen_height - 70))
+        self.geometry(f"{window_width}x{window_height}")
+        self.minsize(min(1120, window_width), min(720, window_height))
         self.configure(bg=BG)
         self._status_kind = "info"
         self._status_source = "Pronto — importa logs ou obtém os logs da PS5."
@@ -276,8 +276,7 @@ class DoctorApp(tk.Tk):
         return {}
 
     def _save_settings(self):
-        data = {"host": self.host.get().strip(), "port": self.port.get().strip(), "theme": self.theme_name, "language": self.language,
-                "connection_mode": getattr(self, "connection_mode_code", self.settings.get("connection_mode", "relay"))}
+        data = {"host": self.host.get().strip(), "port": self.port.get().strip(), "theme": self.theme_name, "language": self.language}
         if hasattr(self, "context_vars"):
             data["context"] = self._get_context()
         try:
@@ -308,6 +307,8 @@ class DoctorApp(tk.Tk):
         style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 21, "bold"))
         style.configure("Section.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 14, "bold"))
         style.configure("Source.TLabel", background=BG, foreground=ACCENT, font=("Segoe UI", 9, "bold"))
+        style.configure("ConnectionStatus.TLabel", background=PANEL, foreground=GREEN, font=("Segoe UI", 10, "bold"))
+        style.configure("DashboardHeading.TLabel", background=PANEL, foreground=TEXT, font=("Segoe UI", 10, "bold"))
         style.configure("TButton", font=("Segoe UI", 10), padding=(11, 8), background=PANEL,
                         foreground=TEXT, bordercolor=BORDER, focusthickness=1, focuscolor=ACCENT)
         style.map("TButton", background=[("active", PANEL_ALT), ("disabled", DISABLED_BG)],
@@ -360,9 +361,6 @@ class DoctorApp(tk.Tk):
 
         state = {
             "log_text": log_text, "active_tab": active_tab, "context": current_context,
-            "host": self.host.get().strip() if hasattr(self, "host") else str(self.settings.get("host", "")),
-            "port": self.port.get().strip() if hasattr(self, "port") else str(self.settings.get("port", RELAY_PORT)),
-            "connection_mode": getattr(self, "connection_mode_code", self.settings.get("connection_mode", "relay")),
             "sources": list(getattr(self, "sources", [])),
             "demo_mode": bool(getattr(self, "demo_mode", False)),
             "findings": list(getattr(self, "findings", [])),
@@ -377,9 +375,6 @@ class DoctorApp(tk.Tk):
         }
         self.settings["context"] = current_context
         self.settings["language"] = new_language
-        self.settings["host"] = state["host"]
-        self.settings["port"] = state["port"]
-        self.settings["connection_mode"] = state["connection_mode"]
         self.language = new_language
         set_ui_language(new_language)
         _set_context_option_language(new_language)
@@ -401,6 +396,7 @@ class DoctorApp(tk.Tk):
         self.last_api_version = state["last_api_version"]
         if state["log_text"]:
             self.log_text.insert("1.0", state["log_text"])
+        self._refresh_sources_panel()
         self._set_source_status(state["source_status_source"])
         self._set_conn_status(state["conn_status_source"])
         self._set_api_info(state["api_info_source"])
@@ -509,32 +505,32 @@ class DoctorApp(tk.Tk):
             self._retheme_tree(child, old_palette, new_palette)
 
     def _build(self):
-        # Compact, conventional desktop layout: a few clear actions and one status line.
-        header = ttk.Frame(self, padding=(20, 16, 20, 10))
+        """Build a compact dashboard inspired by native Windows diagnostic tools."""
+        # Header: project identity, version, preferences and secondary actions.
+        header = ttk.Frame(self, padding=(14, 10, 14, 8))
         header.pack(fill="x")
-        left = ttk.Frame(header)
-        left.pack(side="left", fill="x", expand=True)
-        ttk.Label(left, text="PS5 Jailbreak Doctor", style="Title.TLabel").pack(anchor="w")
-        ttk.Label(left, text="Ajuda a perceber erros em homebrew da PS5.", style="Sub.TLabel").pack(anchor="w", pady=(3, 0))
-        right = ttk.Frame(header)
-        right.pack(side="right", anchor="n")
-        ttk.Label(right, text=f"v{APP_VERSION}", font=("Segoe UI", 9, "bold")).pack(anchor="e")
-        self.rules_count_label = ttk.Label(right, text=f"{len(RULES)} verificações locais", style="Sub.TLabel")
-        self.rules_count_label.pack(anchor="e", pady=(2, 0))
+        brand = ttk.Frame(header)
+        brand.pack(side="left", fill="x", expand=True)
+        ttk.Label(brand, text="PS5 Jailbreak Doctor", style="Title.TLabel").pack(anchor="w")
+        ttk.Label(brand, text="Diagnóstico local de logs da PS5 · ShadowMountPlus e KStuff Lite", style="Sub.TLabel").pack(anchor="w", pady=(2, 0))
 
-        actions = ttk.Frame(self, padding=(20, 0, 20, 10))
-        actions.pack(fill="x")
-        self.btn_fetch = ttk.Button(actions, text="Obter logs da PS5", command=self.fetch_logs)
-        self.btn_fetch.pack(side="left", padx=(0, 8))
-        self.btn_import = ttk.Button(actions, text="Importar logs…", command=self.open_files)
-        self.btn_import.pack(side="left", padx=(0, 8))
-        self.btn_sample = ttk.Button(actions, text="Ver exemplo fictício", command=self.load_sample)
-        self.btn_sample.pack(side="left", padx=(0, 8))
-        self.btn_analyze = ttk.Button(actions, text="Analisar logs", style="Accent.TButton", command=self.analyze)
-        self.btn_analyze.pack(side="left", padx=(4, 0))
-
+        controls = ttk.Frame(header)
+        controls.pack(side="right", anchor="n")
+        meta = ttk.Frame(controls)
+        meta.pack(fill="x", anchor="e", pady=(0, 5))
+        ttk.Label(meta, text=f"v{APP_VERSION}", font=("Segoe UI", 9, "bold")).pack(side="left", padx=(0, 10))
+        self.rules_count_label = ttk.Label(meta, text=tr(f"{len(RULES)} verificações locais"), style="Sub.TLabel")
+        self.rules_count_label.pack(side="left")
+        toolrow = ttk.Frame(controls)
+        toolrow.pack(anchor="e")
+        self.theme_button = ttk.Button(toolrow, text=self._theme_button_text(), command=self.toggle_theme)
+        self.theme_button.pack(side="left", padx=(0, 6))
+        self.language_var = tk.StringVar(value="PT - Português" if self.language == "pt" else "EN - English")
+        self.language_combo = ttk.Combobox(toolrow, textvariable=self.language_var, values=("PT - Português", "EN - English"), state="readonly", width=13)
+        self.language_combo.pack(side="left", padx=(0, 6))
+        self.language_combo.bind("<<ComboboxSelected>>", self.change_language)
+        more_button = ttk.Menubutton(toolrow, text="Mais opções ▾")
         self.anonymize = tk.BooleanVar(value=True)
-        more_button = ttk.Menubutton(actions, text="Mais opções ▾")
         self.more_menu = tk.Menu(more_button, tearoff=0, bg=PANEL, fg=TEXT,
                                  activebackground=PANEL_ALT, activeforeground=TEXT,
                                  disabledforeground=MUTED, relief="solid", borderwidth=1)
@@ -547,41 +543,145 @@ class DoctorApp(tk.Tk):
         self.more_menu.add_checkbutton(label="Anonimizar relatório", variable=self.anonymize)
         self.more_menu.add_command(label="Limpar sessão", command=self.clear)
         more_button["menu"] = self.more_menu
-        more_button.pack(side="right")
-        self.theme_button = ttk.Button(actions, text=self._theme_button_text(), command=self.toggle_theme)
-        self.theme_button.pack(side="right", padx=(0, 8))
-        self.language_var = tk.StringVar(value="PT - Português" if self.language == "pt" else "EN - English")
-        self.language_combo = ttk.Combobox(actions, textvariable=self.language_var, values=("PT - Português", "EN - English"), state="readonly", width=13)
-        self.language_combo.pack(side="right", padx=(0, 8))
-        self.language_combo.bind("<<ComboboxSelected>>", self.change_language)
+        more_button.pack(side="left")
 
-        status_frame = ttk.Frame(self, style="Panel.TFrame", padding=(12, 8))
-        status_frame.pack(fill="x", padx=20, pady=(0, 10))
-        self.status_icon = ttk.Label(status_frame, text="●", background=PANEL, foreground=ACCENT, font=("Segoe UI", 10, "bold"))
-        self.status_icon.pack(side="left", padx=(0, 8))
+        # Single connection/action strip. The console IP is entered here; no config file is edited.
+        control_panel = ttk.Frame(self, style="Panel.TFrame", padding=(10, 8))
+        control_panel.pack(fill="x", padx=12, pady=(0, 8))
+        ttk.Label(control_panel, text="SHADOWMOUNTPLUS API", style="Panel.TLabel", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(2, 10))
+        ttk.Label(control_panel, text="IP da PS5", style="PanelSub.TLabel").pack(side="left", padx=(0, 5))
+        self.host = tk.StringVar(value=str(self.settings.get("host", "")))
+        self.host_entry = ttk.Entry(control_panel, textvariable=self.host, width=18)
+        self.host_entry.pack(side="left", padx=(0, 10))
+        ttk.Label(control_panel, text="Porta", style="PanelSub.TLabel").pack(side="left", padx=(0, 5))
+        self.port = tk.StringVar(value=str(self.settings.get("port", "10101")))
+        self.port_entry = ttk.Entry(control_panel, textvariable=self.port, width=7)
+        self.port_entry.pack(side="left", padx=(0, 10))
+        self.btn_test = ttk.Button(control_panel, text="Testar ligação", command=self.test_api)
+        self.btn_test.pack(side="left", padx=(0, 6))
+        self.btn_fetch = ttk.Button(control_panel, text="Obter logs da PS5", style="Accent.TButton", command=self.fetch_logs)
+        self.btn_fetch.pack(side="left", padx=(0, 12))
+        ttk.Separator(control_panel, orient="vertical").pack(side="left", fill="y", padx=(0, 10), pady=2)
+        self.btn_import = ttk.Button(control_panel, text="Importar logs…", command=self.open_files)
+        self.btn_import.pack(side="left", padx=(0, 6))
+        self.btn_sample = ttk.Button(control_panel, text="Ver exemplo fictício", command=self.load_sample)
+        self.btn_sample.pack(side="left", padx=(0, 6))
+        self.btn_analyze = ttk.Button(control_panel, text="Analisar logs", style="Accent.TButton", command=self.analyze)
+        self.btn_analyze.pack(side="left")
+
+        # Thin footer status strip, always visible.
+        status_frame = ttk.Frame(self, style="Panel.TFrame", padding=(10, 5))
+        status_frame.pack(side="bottom", fill="x", padx=12, pady=(0, 9))
+        self.status_icon = ttk.Label(status_frame, text="●", background=PANEL, foreground=ACCENT, font=("Segoe UI", 9, "bold"))
+        self.status_icon.pack(side="left", padx=(0, 7))
         self.status = tk.StringVar(value=tr("Pronto para começar"))
         ttk.Label(status_frame, textvariable=self.status, style="Panel.TLabel").pack(side="left", fill="x", expand=True)
-        self.conn_status = tk.StringVar(value=tr("PS5 não ligada"))
-        ttk.Label(status_frame, textvariable=self.conn_status, style="Panel.TLabel", font=("Segoe UI", 9)).pack(side="right")
+        ttk.Label(status_frame, text="PS5 Jailbreak Doctor", style="PanelSub.TLabel").pack(side="right")
 
-        self.tabs = ttk.Notebook(self)
-        self.tabs.pack(fill="both", expand=True, padx=20, pady=(0, 8))
-        self.diag_tab = ttk.Frame(self.tabs, style="App.TFrame", padding=(0, 6, 0, 0))
-        self.logs_tab = ttk.Frame(self.tabs, style="App.TFrame", padding=(0, 6, 0, 0))
-        self.connection_tab = ttk.Frame(self.tabs, style="App.TFrame", padding=(0, 6, 0, 0))
-        self.tabs.add(self.diag_tab, text="Resultado")
+        # The lower dock behaves like a log console: logs and connection/security details.
+        dock_height = min(210, max(150, int(self.winfo_screenheight() * 0.21)))
+        bottom = ttk.Frame(self, height=dock_height)
+        bottom.pack(side="bottom", fill="x", padx=12, pady=(0, 7))
+        bottom.pack_propagate(False)
+        self.tabs = ttk.Notebook(bottom)
+        self.tabs.pack(fill="both", expand=True)
+        self.logs_tab = ttk.Frame(self.tabs, style="App.TFrame", padding=(0, 2, 0, 0))
+        self.connection_tab = ttk.Frame(self.tabs, style="App.TFrame", padding=(0, 2, 0, 0))
         self.tabs.add(self.logs_tab, text="Logs")
-        self.tabs.add(self.connection_tab, text="Ligação à PS5")
+        self.tabs.add(self.connection_tab, text="Ligação e segurança")
+
+        # Three-column dashboard: sources, diagnostics, and console/quick actions.
+        workspace = ttk.Frame(self, padding=(12, 0, 12, 8))
+        workspace.pack(fill="both", expand=True)
+        workspace.grid_columnconfigure(0, weight=0, minsize=215)
+        workspace.grid_columnconfigure(1, weight=1)
+        workspace.grid_columnconfigure(2, weight=0, minsize=225)
+        workspace.grid_rowconfigure(0, weight=1)
+
+        left_panel = ttk.Frame(workspace, style="Panel.TFrame", padding=11, width=215)
+        left_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        left_panel.grid_propagate(False)
+        ttk.Label(left_panel, text="SESSÃO / ORIGENS", style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        ttk.Label(left_panel, text="Os dados desta sessão ficam no computador.", style="PanelSub.TLabel", wraplength=190).pack(anchor="w", pady=(4, 8))
+        self.source_summary_var = tk.StringVar(value=tr("Nenhuma origem carregada"))
+        ttk.Label(left_panel, textvariable=self.source_summary_var, style="PanelSub.TLabel", wraplength=190).pack(anchor="w", pady=(0, 5))
+        list_frame = ttk.Frame(left_panel, style="Panel.TFrame")
+        list_frame.pack(fill="both", expand=True)
+        self.source_listbox = tk.Listbox(list_frame, height=6, bg=INPUT, fg=TEXT,
+                                         selectbackground=ACCENT, selectforeground=SELECT_TEXT,
+                                         relief="flat", borderwidth=0, font=("Segoe UI", 9),
+                                         activestyle="none", highlightthickness=1, highlightbackground=BORDER)
+        source_scroll = ttk.Scrollbar(list_frame, orient="vertical", command=self.source_listbox.yview)
+        self.source_listbox.configure(yscrollcommand=source_scroll.set)
+        self.source_listbox.pack(side="left", fill="both", expand=True)
+        source_scroll.pack(side="right", fill="y")
+        ttk.Separator(left_panel).pack(fill="x", pady=9)
+        ttk.Button(left_panel, text="Ver logs completos", command=lambda: self.tabs.select(self.logs_tab)).pack(fill="x", pady=(0, 6))
+        ttk.Button(left_panel, text="Limpar sessão", command=self.clear).pack(fill="x")
+        ttk.Label(left_panel, text="Privacidade", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(14, 3))
+        ttk.Label(left_panel, text="A análise é local. Os logs não são enviados automaticamente.", style="PanelSub.TLabel", wraplength=190, justify="left").pack(anchor="w")
+
+        self.diag_tab = ttk.Frame(workspace, style="App.TFrame", padding=(0, 0, 0, 0))
+        self.diag_tab.grid(row=0, column=1, sticky="nsew", padx=(0, 8))
+
+        right_panel = ttk.Frame(workspace, style="App.TFrame", width=225)
+        right_panel.grid(row=0, column=2, sticky="nsew")
+        right_panel.grid_propagate(False)
+        connection_card = ttk.Frame(right_panel, style="Panel.TFrame", padding=12)
+        connection_card.pack(fill="x", pady=(0, 8))
+        ttk.Label(connection_card, text="ESTADO DA CONSOLA", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        self.conn_status = tk.StringVar(value=tr("PS5 não ligada"))
+        self.conn_status_label = ttk.Label(connection_card, textvariable=self.conn_status, style="ConnectionStatus.TLabel", wraplength=195)
+        self.conn_status_label.pack(anchor="w", pady=(8, 5))
+        self.conn_status_label.configure(foreground=AMBER)
+        self.api_info = tk.StringVar(value=tr("Ainda não ligado. Clica em «Testar ligação» para começar."))
+        self.api_info_label = ttk.Label(connection_card, textvariable=self.api_info, style="PanelSub.TLabel", wraplength=195, justify="left")
+        self.api_info_label.pack(anchor="w")
+        self.api_version_var = tk.StringVar(value=tr("Versão da API: por confirmar"))
+        ttk.Label(connection_card, textvariable=self.api_version_var, style="PanelSub.TLabel", wraplength=195).pack(anchor="w", pady=(8, 0))
+
+        quick_card = ttk.Frame(right_panel, style="Panel.TFrame", padding=12)
+        quick_card.pack(fill="x", pady=(0, 8))
+        ttk.Label(quick_card, text="FERRAMENTAS", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 7))
+        self.btn_scanner = ttk.Button(quick_card, text="Verificar scanner", command=self.inspect_scanner)
+        self.btn_scanner.pack(fill="x", pady=(0, 5))
+        ttk.Button(quick_card, text="Guardar relatório…", command=self.save_report).pack(fill="x", pady=(0, 5))
+        ttk.Button(quick_card, text="Histórico e reversões…", command=self.open_history).pack(fill="x", pady=(0, 5))
+        ttk.Button(quick_card, text="Atualizar diagnósticos…", command=self.check_diagnostic_updates).pack(fill="x")
+
+        note_card = ttk.Frame(right_panel, style="Panel.TFrame", padding=12)
+        note_card.pack(fill="both", expand=True)
+        ttk.Label(note_card, text="SOBRE O DIAGNÓSTICO", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        ttk.Label(note_card, text="Os resultados são pistas, não causas confirmadas. A aplicação não altera a PS5.", style="PanelSub.TLabel", wraplength=195, justify="left").pack(anchor="w", pady=(6, 0))
+
         self._build_diagnostics_tab()
         self._build_logs_tab()
         self._build_connection_tab()
+        self._refresh_sources_panel()
 
-        footer = ttk.Frame(self, padding=(20, 0, 20, 10))
-        footer.pack(fill="x")
-        ttk.Label(footer, text="Os logs são analisados neste PC. A app não altera a consola.", style="Sub.TLabel").pack(anchor="w")
+
+    def _refresh_sources_panel(self):
+        """Refresh the source list and session counters without touching log content."""
+        if not hasattr(self, "source_listbox"):
+            return
+        self.source_listbox.delete(0, "end")
+        for source in self.sources:
+            self.source_listbox.insert("end", tr("Exemplo integrado") if str(source) == "exemplo integrado (dados fictícios)" else str(source))
+        try:
+            line_count = len(self.log_text.get("1.0", "end-1c").splitlines()) if hasattr(self, "log_text") else 0
+        except tk.TclError:
+            line_count = 0
+        count = len(self.sources)
+        if count:
+            self.source_summary_var.set(f"{count} {tr('origem(ns)')} · {line_count} {tr('linhas')}")
+        else:
+            self.source_summary_var.set(tr("Nenhuma origem carregada"))
+        if hasattr(self, "api_version_var"):
+            version = self.last_api_version or tr("por confirmar")
+            self.api_version_var.set(tr("Versão da API: ") + str(version))
 
     def _build_diagnostics_tab(self):
-        intro = ttk.Frame(self.diag_tab, padding=(14, 8, 14, 8))
+        intro = ttk.Frame(self.diag_tab, padding=(8, 5, 8, 7))
         intro.pack(fill="x")
         title_line = ttk.Frame(intro)
         title_line.pack(fill="x")
@@ -589,44 +689,49 @@ class DoctorApp(tk.Tk):
         self.context_open = False
         self.context_button = ttk.Button(title_line, text="Detalhes técnicos (opcional) ▸", style="Link.TButton", command=self.toggle_context)
         self.context_button.pack(side="right")
-        ttk.Label(intro, text="Abre um resultado para ver o que foi encontrado e os passos a seguir.", style="Sub.TLabel").pack(anchor="w", pady=(3, 0))
-        self.source_status_label = ttk.Label(intro, textvariable=self.source_status, style="Source.TLabel")
+        ttk.Label(intro, text="Abre um resultado para ver o que foi encontrado e os passos a seguir.", style="Sub.TLabel", wraplength=650).pack(anchor="w", pady=(3, 0))
+        self.source_status_label = ttk.Label(intro, textvariable=self.source_status, style="Source.TLabel", wraplength=650)
         self.source_status_label.pack(anchor="w", pady=(5, 0))
 
         self.context_vars = {}
         saved_context = self.settings.get("context", {}) if isinstance(self.settings.get("context", {}), dict) else {}
-        context_panel = ttk.Frame(self.diag_tab, style="Panel.TFrame", padding=(12, 9))
+        context_panel = ttk.Frame(self.diag_tab, style="Panel.TFrame", padding=(10, 9))
         self.context_panel = context_panel
-        ttk.Label(context_panel, text="Informação opcional para afinar o diagnóstico", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, columnspan=6, sticky="w", pady=(0, 7))
-        ttk.Label(context_panel, text="Firmware", style="PanelSub.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 5))
-        self.context_vars["firmware"] = tk.StringVar(value=saved_context.get("firmware", ""))
-        ttk.Entry(context_panel, textvariable=self.context_vars["firmware"], width=10).grid(row=1, column=1, sticky="w", padx=(0, 12))
-        ttk.Label(context_panel, text="ShadowMountPlus", style="PanelSub.TLabel").grid(row=1, column=2, sticky="w", padx=(0, 5))
-        self.context_vars["shadowmount_version"] = tk.StringVar(value=saved_context.get("shadowmount_version", ""))
-        ttk.Entry(context_panel, textvariable=self.context_vars["shadowmount_version"], width=15).grid(row=1, column=3, sticky="w", padx=(0, 12))
-        ttk.Label(context_panel, text="KStuff Lite", style="PanelSub.TLabel").grid(row=1, column=4, sticky="w", padx=(0, 5))
-        self.context_vars["kstuff_version"] = tk.StringVar(value=saved_context.get("kstuff_version", ""))
-        ttk.Entry(context_panel, textvariable=self.context_vars["kstuff_version"], width=13).grid(row=1, column=5, sticky="w")
+        for column in range(4):
+            context_panel.columnconfigure(column, weight=1 if column in (1, 3) else 0)
+        ttk.Label(context_panel, text="Informação opcional para afinar o diagnóstico", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 7))
 
-        ttk.Label(context_panel, text="Formato", style="PanelSub.TLabel").grid(row=2, column=0, sticky="w", padx=(0, 5), pady=(8, 0))
+        ttk.Label(context_panel, text="Firmware", style="PanelSub.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 5), pady=(0, 7))
+        self.context_vars["firmware"] = tk.StringVar(value=saved_context.get("firmware", ""))
+        ttk.Entry(context_panel, textvariable=self.context_vars["firmware"], width=12).grid(row=1, column=1, sticky="ew", padx=(0, 12), pady=(0, 7))
+        ttk.Label(context_panel, text="ShadowMountPlus", style="PanelSub.TLabel").grid(row=1, column=2, sticky="w", padx=(0, 5), pady=(0, 7))
+        self.context_vars["shadowmount_version"] = tk.StringVar(value=saved_context.get("shadowmount_version", ""))
+        ttk.Entry(context_panel, textvariable=self.context_vars["shadowmount_version"], width=17).grid(row=1, column=3, sticky="ew", pady=(0, 7))
+
+        ttk.Label(context_panel, text="KStuff Lite", style="PanelSub.TLabel").grid(row=2, column=0, sticky="w", padx=(0, 5), pady=(0, 7))
+        self.context_vars["kstuff_version"] = tk.StringVar(value=saved_context.get("kstuff_version", ""))
+        ttk.Entry(context_panel, textvariable=self.context_vars["kstuff_version"], width=12).grid(row=2, column=1, sticky="ew", padx=(0, 12), pady=(0, 7))
+        ttk.Label(context_panel, text="Formato", style="PanelSub.TLabel").grid(row=2, column=2, sticky="w", padx=(0, 5), pady=(0, 7))
         self.context_vars["origin_type"] = tk.StringVar(value=saved_context.get("origin_type", "unknown"))
-        self.origin_combo = ttk.Combobox(context_panel, textvariable=self.context_vars["origin_type"], width=21, state="readonly", values=list(ORIGIN_OPTIONS.values()))
-        self.origin_combo.grid(row=2, column=1, sticky="w", padx=(0, 12), pady=(8, 0))
-        ttk.Label(context_panel, text="Onde está o jogo", style="PanelSub.TLabel").grid(row=2, column=2, sticky="w", padx=(0, 5), pady=(8, 0))
+        self.origin_combo = ttk.Combobox(context_panel, textvariable=self.context_vars["origin_type"], width=18, state="readonly", values=list(ORIGIN_OPTIONS.values()))
+        self.origin_combo.grid(row=2, column=3, sticky="ew", pady=(0, 7))
+
+        ttk.Label(context_panel, text="Onde está o jogo", style="PanelSub.TLabel").grid(row=3, column=0, sticky="w", padx=(0, 5), pady=(0, 7))
         self.context_vars["storage"] = tk.StringVar(value=saved_context.get("storage", "unknown"))
-        self.storage_combo = ttk.Combobox(context_panel, textvariable=self.context_vars["storage"], width=24, state="readonly", values=list(STORAGE_OPTIONS.values()))
-        self.storage_combo.grid(row=2, column=3, sticky="w", padx=(0, 12), pady=(8, 0))
-        ttk.Label(context_panel, text="Quando começou", style="PanelSub.TLabel").grid(row=2, column=4, sticky="w", padx=(0, 5), pady=(8, 0))
+        self.storage_combo = ttk.Combobox(context_panel, textvariable=self.context_vars["storage"], width=18, state="readonly", values=list(STORAGE_OPTIONS.values()))
+        self.storage_combo.grid(row=3, column=1, sticky="ew", padx=(0, 12), pady=(0, 7))
+        ttk.Label(context_panel, text="Quando começou", style="PanelSub.TLabel").grid(row=3, column=2, sticky="w", padx=(0, 5), pady=(0, 7))
         self.context_vars["trigger"] = tk.StringVar(value=saved_context.get("trigger", "unknown"))
-        self.trigger_combo = ttk.Combobox(context_panel, textvariable=self.context_vars["trigger"], width=25, state="readonly", values=list(TRIGGER_OPTIONS.values()))
-        self.trigger_combo.grid(row=2, column=5, sticky="w", pady=(8, 0))
+        self.trigger_combo = ttk.Combobox(context_panel, textvariable=self.context_vars["trigger"], width=18, state="readonly", values=list(TRIGGER_OPTIONS.values()))
+        self.trigger_combo.grid(row=3, column=3, sticky="ew", pady=(0, 7))
+
         self.context_vars["origin_type"].set(ORIGIN_OPTIONS.get(_context_option_code("origin_type", str(saved_context.get("origin_type", "unknown"))), ORIGIN_OPTIONS["unknown"]))
         self.context_vars["storage"].set(STORAGE_OPTIONS.get(_context_option_code("storage", str(saved_context.get("storage", "unknown"))), STORAGE_OPTIONS["unknown"]))
         self.context_vars["trigger"].set(TRIGGER_OPTIONS.get(_context_option_code("trigger", str(saved_context.get("trigger", "unknown"))), TRIGGER_OPTIONS["unknown"]))
-        ttk.Button(context_panel, text="Limpar", command=self.clear_context).grid(row=3, column=5, sticky="e", pady=(8, 0))
-        ttk.Label(context_panel, text="Estes dados só ajudam a comparar o teu caso com os relatos existentes.", style="PanelSub.TLabel", wraplength=980).grid(row=3, column=0, columnspan=5, sticky="w", pady=(8, 0))
+        ttk.Label(context_panel, text="Estes dados só ajudam a comparar o teu caso com os relatos existentes.", style="PanelSub.TLabel", wraplength=470).grid(row=4, column=0, columnspan=3, sticky="w", pady=(0, 0))
+        ttk.Button(context_panel, text="Limpar", command=self.clear_context).grid(row=4, column=3, sticky="e")
 
-        self.summary_row = ttk.Frame(self.diag_tab, padding=(14, 0, 14, 8))
+        self.summary_row = ttk.Frame(self.diag_tab, padding=(8, 0, 8, 7))
         self.summary_row.pack(fill="x")
         self.metric_vars = {
             "errors": tk.StringVar(value="—"),
@@ -636,9 +741,9 @@ class DoctorApp(tk.Tk):
         self._metric(self.summary_row, "ERROS", self.metric_vars["errors"], RED, 0)
         self._metric(self.summary_row, "AVISOS", self.metric_vars["warnings"], AMBER, 1)
         self._metric(self.summary_row, "RESULTADO", self.metric_vars["matches"], ACCENT, 2, wide=True)
-        self.context_panel.pack_forget()  # Advanced fields start collapsed to keep the main view simple.
+        self.context_panel.pack_forget()
         self.cards = ScrollableFrame(self.diag_tab)
-        self.cards.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+        self.cards.pack(fill="both", expand=True, padx=8, pady=(0, 5))
 
     def toggle_context(self):
         if self.context_open:
@@ -659,182 +764,30 @@ class DoctorApp(tk.Tk):
         ttk.Label(card, textvariable=var, style=value_style).pack(anchor="w", pady=(4, 0))
 
     def _build_logs_tab(self):
-        toolbar = ttk.Frame(self.logs_tab, padding=(14, 8, 14, 10))
+        toolbar = ttk.Frame(self.logs_tab, padding=(10, 5, 10, 5))
         toolbar.pack(fill="x")
-        ttk.Label(toolbar, text="Logs completos", style="Section.TLabel").pack(side="left")
+        ttk.Label(toolbar, text="Logs completos", style="Section.TLabel", font=("Segoe UI", 11, "bold")).pack(side="left")
+        ttk.Label(toolbar, text="Texto original; não é modificado pela tradução da interface.", style="Sub.TLabel").pack(side="left", padx=(12, 0))
         ttk.Button(toolbar, text="Importar ficheiros…", command=self.open_files).pack(side="right")
-        ttk.Label(self.logs_tab, text="Podes colar texto diretamente nesta área. Os logs ficam neste computador.", style="Sub.TLabel").pack(anchor="w", padx=16, pady=(0, 8))
         self.log_text = ScrolledText(self.logs_tab, wrap="word", undo=True, bg=INPUT, fg=TEXT,
                                      insertbackground=TEXT, selectbackground=ACCENT,
                                      selectforeground=SELECT_TEXT, relief="flat", borderwidth=0,
-                                     font=("Consolas", 10), padx=14, pady=14)
-        self.log_text.pack(fill="both", expand=True, padx=14, pady=(0, 14))
+                                     font=("Consolas", 9), padx=10, pady=8)
+        self.log_text.pack(fill="both", expand=True, padx=10, pady=(0, 9))
 
     def _build_connection_tab(self):
-        intro = ttk.Frame(self.connection_tab, padding=(16, 10, 16, 12))
-        intro.pack(fill="x")
-        ttk.Label(intro, text="Ligar à PS5", style="Section.TLabel").pack(anchor="w")
-        ttk.Label(intro, text="Liga ao ShadowMountPlus sem editar manualmente o config.ini.", style="Sub.TLabel", wraplength=850).pack(anchor="w", pady=(3, 0))
-
-        panel = ttk.Frame(self.connection_tab, style="Panel.TFrame", padding=18)
-        panel.pack(fill="x", padx=14, pady=(0, 12))
-        ttk.Label(panel, text="MODO DE LIGAÇÃO", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 12), pady=(0, 12))
-        self.connection_mode_code = self.settings.get("connection_mode", "relay")
-        self.connection_mode_var = tk.StringVar(value=tr("Relay ELF (sem alterar config.ini)") if self.connection_mode_code == "relay" else tr("API direta (requer acesso pela LAN)"))
-        self.connection_mode_combo = ttk.Combobox(
-            panel, textvariable=self.connection_mode_var, state="readonly", width=38,
-            values=(tr("Relay ELF (sem alterar config.ini)"), tr("API direta (requer acesso pela LAN)")),
-        )
-        self.connection_mode_combo.grid(row=0, column=1, columnspan=3, sticky="w", pady=(0, 12))
-        self.connection_mode_combo.bind("<<ComboboxSelected>>", self._on_connection_mode_change)
-
-        ttk.Label(panel, text="IP da PS5", style="Panel.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 8))
-        self.host = tk.StringVar(value=str(self.settings.get("host", "")))
-        ttk.Entry(panel, textvariable=self.host, width=24).grid(row=1, column=1, sticky="w", padx=(0, 22))
-        ttk.Label(panel, text="Porta", style="Panel.TLabel").grid(row=1, column=2, sticky="w", padx=(0, 8))
-        self.port = tk.StringVar(value=preferred_connection_port(self.settings, self.connection_mode_code))
-        self.port_entry = ttk.Entry(panel, textvariable=self.port, width=10,
-                                    state="readonly" if self.connection_mode_code == "relay" else "normal")
-        self.port_entry.grid(row=1, column=3, sticky="w")
-
-        buttons_primary = ttk.Frame(panel, style="Panel.TFrame")
-        buttons_primary.grid(row=2, column=0, columnspan=4, sticky="w", pady=(14, 0))
-        self.btn_activate_relay = ttk.Button(buttons_primary, text="Ligação automática (sem config.ini)", style="Accent.TButton", command=self.activate_relay)
-        self.btn_activate_relay.pack(side="left", padx=(0, 8))
-        self.btn_find_relay = ttk.Button(buttons_primary, text="Procurar relay na rede", command=self.find_relay)
-        self.btn_find_relay.pack(side="left")
-
-        buttons = ttk.Frame(panel, style="Panel.TFrame")
-        buttons.grid(row=3, column=0, columnspan=4, sticky="w", pady=(8, 0))
-        self.btn_test = ttk.Button(buttons, text="Testar ligação", command=self.test_api)
-        self.btn_test.pack(side="left", padx=(0, 8))
-        self.btn_fetch = ttk.Button(buttons, text="Obter logs e analisar", style="Accent.TButton", command=self.fetch_logs)
-        self.btn_fetch.pack(side="left", padx=(0, 8))
-        self.btn_scanner = ttk.Button(buttons, text=tr("Verificar scanner"), command=self.inspect_scanner)
-        self.btn_scanner.pack(side="left")
-        self.api_info = tk.StringVar(value=tr("Ainda não ligado. Clica em «Testar ligação» para começar."))
-        self.api_info_label = ttk.Label(panel, textvariable=self.api_info, style="PanelSub.TLabel", wraplength=900, justify="left")
-        self.api_info_label.grid(row=4, column=0, columnspan=4, sticky="w", pady=(12, 0))
-
-        config_help = ttk.Frame(self.connection_tab, style="Panel.TFrame", padding=16)
-        config_help.pack(fill="x", padx=14, pady=(0, 12))
-        ttk.Label(config_help, text="Como funciona a ligação automática", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
-        ttk.Label(
-            config_help,
-            text=("O modo recomendado carrega um pequeno relay ELF na PS5 através do loader de payloads (normalmente a porta 9021). "
-                  "O relay lê a configuração existente para localizar a API, não altera config.ini e permite que o launcher local continue a usar 127.0.0.1:10101, "
-                  "mesmo se a API tiver sido associada a um IP específico. O Doctor procura o relay automaticamente; se a descoberta por broadcast for bloqueada, podes introduzir o IP da PS5 acima."),
-            style="PanelSub.TLabel", wraplength=950, justify="left"
-        ).pack(anchor="w", pady=(6, 0))
-        ttk.Label(
-            config_help,
-            text=("O relay expõe pela rede apenas endpoints de leitura de versão, logs e configuração do scanner. Precisa de ser carregado novamente após um reinício completo, "
-                  "salvo se já utilizares um autoloader de payloads. O modo «API direta» continua disponível para quem já tenha acesso LAN configurado no ShadowMountPlus."),
-            style="PanelSub.TLabel", wraplength=950, justify="left"
-        ).pack(anchor="w", pady=(7, 0))
-
-        safety = ttk.Frame(self.connection_tab, style="Panel.TFrame", padding=16)
-        safety.pack(fill="x", padx=14)
-        ttk.Label(safety, text="Privacidade e segurança", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
-        ttk.Label(safety, text=(
-            "A ligação só acontece quando carregas num botão. O relay não altera ficheiros nem definições persistentes; inicia apenas um serviço temporário de diagnóstico. As leituras pela rede ficam limitadas a rotas de diagnóstico. "
-            "Como os logs podem conter identificadores, usa apenas uma rede privada de confiança e nunca encaminhes as portas 10102 ou 10103 para a Internet."
-        ), style="PanelSub.TLabel", wraplength=950, justify="left").pack(anchor="w", pady=(6, 0))
-
-    def _on_connection_mode_change(self, _event=None):
-        direct_label = tr("API direta (requer acesso pela LAN)")
-        self.connection_mode_code = "direct" if self.connection_mode_var.get() == direct_label else "relay"
-        self.settings["connection_mode"] = self.connection_mode_code
-        self.port.set("10101" if self.connection_mode_code == "direct" else str(RELAY_PORT))
-        if hasattr(self, "port_entry"):
-            self.port_entry.configure(state="normal" if self.connection_mode_code == "direct" else "readonly")
-        self._save_settings()
-
-    def _connection_action_buttons(self):
-        return [button for button in (
-            getattr(self, "btn_activate_relay", None), getattr(self, "btn_find_relay", None),
-            getattr(self, "btn_test", None), getattr(self, "btn_fetch", None), getattr(self, "btn_scanner", None),
-        ) if button is not None]
-
-    @staticmethod
-    def _check_api_version(host: str, port: int | str, timeout: float = 4.0):
-        data = api_post(host, str(port), "/api/v1/version", {}, timeout=timeout)
-        if not isinstance(data, dict) or data.get("status", 0) not in (0, None):
-            raise RelayError(f"O endpoint de versão não devolveu uma resposta válida: {data}")
-        return data
-
-    def _relay_ready(self, host: str, port: int, data: dict, note: str = ""):
-        self.host.set(host)
-        self.port.set(str(port))
-        self.connection_mode_code = "relay"
-        self.settings["connection_mode"] = "relay"
-        self.connection_mode_var.set(tr("Relay ELF (sem alterar config.ini)"))
-        self.last_api_version = str(data.get("shadowmount_version", "desconhecida"))
-        self._save_settings()
-        self._set_conn_status("✅ Ligação confirmada")
-        self._set_api_info(tr("Relay ativo. Agora podes obter os logs reais da PS5."))
-        extra = f" {note}" if note else ""
-        self._set_status(f"Relay ligado a {host}:{port}. Configuração do ShadowMountPlus não alterada.{extra}", "ok")
-
-    def find_relay(self):
-        def job():
-            found = discover_relay(timeout=2.5)
-            if not found:
-                raise RelayError("Não foi encontrado um relay ativo na rede local. Clica em «Ligação automática» para carregar o ELF, ou confirma que o PC e a PS5 estão na mesma rede.")
-            host, port = found
-            data = self._check_api_version(host, port)
-            return lambda app: app._relay_ready(host, port, data, "Relay encontrado na rede.")
-        self._async_action(self._connection_action_buttons(), job)
-
-    def activate_relay(self):
-        def job():
-            # First reuse a relay that is already running; avoid loading duplicates.
-            found = None
-            try:
-                found = discover_relay(timeout=1.4)
-            except RelayError:
-                pass
-            if found:
-                host, port = found
-                data = self._check_api_version(host, port)
-                return lambda app: app._relay_ready(host, port, data, "Relay já estava ativo.")
-
-            host = self.host.get().strip()
-            if not host:
-                raise RelayError("Não encontrei um relay ativo. Introduz o IP atual da PS5 para carregar o ELF através do loader.")
-
-            # A broadcast response can be blocked by some access points. Try a direct
-            # check against the saved console address before injecting another payload.
-            try:
-                data = self._check_api_version(host, RELAY_PORT, timeout=1.2)
-                return lambda app: app._relay_ready(host, RELAY_PORT, data, "Relay já estava ativo.")
-            except Exception:
-                pass
-
-            sent_bytes = send_relay_elf(host, port=LOADER_PORT)
-            last_error = None
-            for _ in range(10):
-                try:
-                    found = discover_relay(timeout=0.8)
-                    if found:
-                        found_host, found_port = found
-                        data = self._check_api_version(found_host, found_port, timeout=1.2)
-                        return lambda app: app._relay_ready(found_host, found_port, data, f"Payload enviado ({sent_bytes:,} bytes).")
-                except Exception as exc:
-                    last_error = exc
-                # Discovery broadcasts can be blocked; query the selected console IP too.
-                try:
-                    data = self._check_api_version(host, RELAY_PORT, timeout=1.2)
-                    return lambda app: app._relay_ready(host, RELAY_PORT, data, f"Payload enviado ({sent_bytes:,} bytes).")
-                except Exception as exc:
-                    last_error = exc
-            reason = f" Último erro: {last_error}" if last_error else ""
-            raise RelayError(
-                f"O payload foi enviado ({sent_bytes:,} bytes), mas o relay não respondeu na porta {RELAY_PORT}. "
-                "Confirma que o loader da PS5 aceita payloads na porta 9021, que a consola e o PC estão na mesma rede e que a versão do ShadowMountPlus tem a API ativa. "
-                "Se o broadcast for bloqueado, tenta «Procurar relay na rede» ou reinicia a ligação." + reason
-            )
-        self._async_action(self._connection_action_buttons(), job)
+        outer = ttk.Frame(self.connection_tab, padding=(12, 8))
+        outer.pack(fill="both", expand=True)
+        left = ttk.Frame(outer, style="Panel.TFrame", padding=10)
+        left.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        right = ttk.Frame(outer, style="Panel.TFrame", padding=10)
+        right.pack(side="left", fill="both", expand=True)
+        ttk.Label(left, text="LIGAÇÃO AO SHADOWMOUNTPLUS", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        ttk.Label(left, text="Indica o IP local da PS5 e a porta da API no painel superior. Testa a ligação antes de recolher os logs. A aplicação não modifica o config.ini nem altera a consola.", style="PanelSub.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(5, 0))
+        ttk.Label(left, textvariable=self.api_info, style="PanelSub.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(7, 0))
+        ttk.Label(right, text="PRIVACIDADE E SEGURANÇA", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        ttk.Label(right, text="A API do ShadowMountPlus não tem autenticação nas versões suportadas. Utiliza-a apenas numa rede local de confiança e nunca encaminhes a porta para a Internet. Os logs são analisados localmente; não são enviados automaticamente.", style="PanelSub.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(5, 0))
+        ttk.Button(right, text="Verificar scanner (leitura apenas)", command=self.inspect_scanner).pack(anchor="w", pady=(8, 0))
 
     def _get_context(self) -> dict:
         reverse_maps = {
@@ -868,6 +821,13 @@ class DoctorApp(tk.Tk):
     def _set_conn_status(self, message: str):
         self._conn_status_source = message
         self.conn_status.set(tr(message))
+        if hasattr(self, "conn_status_label"):
+            low = str(message).casefold()
+            color = RED if ("não ligada" in low or "not connected" in low or "não foi possível" in low) else GREEN if ("confirmada" in low or "ps5 ligada" in low or "connected" in low) else AMBER
+            try:
+                self.conn_status_label.configure(foreground=color)
+            except tk.TclError:
+                pass
 
     def _set_api_info(self, message: str):
         self._api_info_source = message
@@ -987,7 +947,7 @@ class DoctorApp(tk.Tk):
         card = ttk.Frame(self.cards.inner, style="Panel.TFrame", padding=14)
         card.pack(fill="x", pady=(0, 10), padx=1)
         ttk.Label(card, text="Cronologia de erros (linhas do log)", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
-        ttk.Label(card, text="Ordem em que os sinais aparecem no ficheiro; isto não prova uma causa-raiz.", style="PanelSub.TLabel", wraplength=930).pack(anchor="w", pady=(3, 7))
+        ttk.Label(card, text="Ordem em que os sinais aparecem no ficheiro; isto não prova uma causa-raiz.", style="PanelSub.TLabel", wraplength=700).pack(anchor="w", pady=(3, 7))
         for event in events[:6]:
             kind = event["kind"]
             label = "Possível sinal crítico" if kind == "critical" else "Possível erro" if kind == "error" else "Aviso / estado"
@@ -1011,10 +971,10 @@ class DoctorApp(tk.Tk):
                 ttk.Separator(section).pack(fill="x", pady=8)
             title = tr(str(check.get("title", "")))
             ttk.Label(section, text=title, style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w")
-            ttk.Label(section, text=tr(str(check.get("summary", ""))), style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(4, 4))
+            ttk.Label(section, text=tr(str(check.get("summary", ""))), style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w", pady=(4, 4))
             steps = check.get("steps", [])
             for number, step in enumerate(steps, 1):
-                ttk.Label(section, text=f"{number}. {tr(str(step))}", style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(2, 0))
+                ttk.Label(section, text=f"{number}. {tr(str(step))}", style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w", pady=(2, 0))
 
     def _render_compatibility_notices(self, context):
         entries = evaluate_compatibility(context, doctor_core.KNOWLEDGE_BASE)
@@ -1024,10 +984,10 @@ class DoctorApp(tk.Tk):
             card = ttk.Frame(self.cards.inner, style="Panel.TFrame", padding=14)
             card.pack(fill="x", pady=(0, 10), padx=1)
             ttk.Label(card, text=tr("Notas de compatibilidade para o contexto indicado"), style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
-            ttk.Label(card, text=entry.get("title", ""), style="Panel.TLabel", font=("Segoe UI", 11, "bold"), wraplength=930).pack(anchor="w", pady=(4, 4))
+            ttk.Label(card, text=entry.get("title", ""), style="Panel.TLabel", font=("Segoe UI", 11, "bold"), wraplength=700).pack(anchor="w", pady=(4, 4))
             ttk.Label(card, text=entry.get("severity", "Informação"), style="PanelSub.TLabel").pack(anchor="w")
-            ttk.Label(card, text=entry.get("status", ""), style="PanelSub.TLabel", wraplength=930).pack(anchor="w", pady=(2, 4))
-            ttk.Label(card, text=entry.get("summary", ""), style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w")
+            ttk.Label(card, text=entry.get("status", ""), style="PanelSub.TLabel", wraplength=700).pack(anchor="w", pady=(2, 4))
+            ttk.Label(card, text=entry.get("summary", ""), style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w")
             if entry.get("sources"):
                 row = ttk.Frame(card, style="Panel.TFrame")
                 row.pack(fill="x", pady=(7, 0))
@@ -1039,7 +999,7 @@ class DoctorApp(tk.Tk):
         card.pack(fill="x", pady=(0, 10))
         ttk.Label(card, text=icon, style="Panel.TLabel", foreground=color, font=("Segoe UI", 18, "bold")).pack(anchor="w")
         ttk.Label(card, text=title, style="Panel.TLabel", font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(5, 4))
-        ttk.Label(card, text=body, style="PanelSub.TLabel", wraplength=900, justify="left").pack(anchor="w")
+        ttk.Label(card, text=body, style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w")
 
     def _clear_cards(self):
         for child in self.cards.inner.winfo_children():
@@ -1055,8 +1015,8 @@ class DoctorApp(tk.Tk):
             "Também podes abrir um exemplo fictício para conhecer a aplicação; esse exemplo não representa a tua consola.\n\n"
             "Quando os logs estiverem carregados, escolhe ‘Analisar logs’. Depois abre um resultado para consultar "
             "as linhas encontradas e os passos sugeridos."
-        ), style="PanelSub.TLabel", justify="left", wraplength=850).pack(anchor="w", pady=(8, 0))
-        ttk.Label(self.cards.inner, text="A análise é feita neste computador. Nenhum ficheiro é enviado automaticamente.", style="Sub.TLabel", wraplength=850).pack(anchor="w", padx=2, pady=(2, 0))
+        ), style="PanelSub.TLabel", justify="left", wraplength=700).pack(anchor="w", pady=(8, 0))
+        ttk.Label(self.cards.inner, text="A análise é feita neste computador. Nenhum ficheiro é enviado automaticamente.", style="Sub.TLabel", wraplength=700).pack(anchor="w", padx=2, pady=(2, 0))
 
     def _append_logs(self, text: str, source: str):
         if not text.strip():
@@ -1070,6 +1030,7 @@ class DoctorApp(tk.Tk):
         self.log_text.see("end")
         if source not in self.sources:
             self.sources.append(source)
+        self._refresh_sources_panel()
         self.tabs.select(self.logs_tab)
 
     def open_files(self):
@@ -1115,6 +1076,7 @@ class DoctorApp(tk.Tk):
         self.log_text.insert("1.0", sample)
         self.sources = ["exemplo integrado (dados fictícios)"]
         self.demo_mode = True
+        self._refresh_sources_panel()
         self._set_source_status("MODO DE DEMONSTRAÇÃO · Dados fictícios; não são logs da tua PS5.")
         self._set_status("Exemplo fictício carregado. Ao obter logs da PS5, este exemplo será substituído.", "warning")
         self.analyze()
@@ -1123,6 +1085,7 @@ class DoctorApp(tk.Tk):
         self.log_text.delete("1.0", "end")
         self.sources = []
         self.demo_mode = False
+        self._refresh_sources_panel()
         self._set_source_status("Origem: ainda não há logs carregados")
         self.findings = []
         self.last_analyzed_text = ""
@@ -1165,11 +1128,9 @@ class DoctorApp(tk.Tk):
     def _friendly_error(error: str) -> str:
         low = error.lower()
         if "timed out" in low or "timeout" in low:
-            return "A ligação expirou. Confirma que a PS5 e o PC estão na mesma rede. No modo relay, carrega em «Ligação automática»; no modo API direta, confirma se a API aceita ligações pela LAN."
+            return "A ligação expirou. Confirma o IP, a porta e se a API do ShadowMountPlus aceita ligações da rede local."
         if "connection refused" in low or "actively refused" in low or "winerror 10061" in low:
-            return ("A ligação foi recusada. Confirma que o ShadowMountPlus e a API local estão ativos. "
-                    "Para evitar alterar config.ini, seleciona «Relay ELF» e carrega em «Ligação automática». "
-                    "O relay usa a API local existente e disponibiliza apenas os endpoints de leitura necessários ao Doctor.")
+            return "A PS5 recusou a ligação. Confirma que o ShadowMountPlus está ativo e que a API está configurada para aceitar ligações da LAN."
         if "forbidden" in low or "unauthorized" in low:
             return "A API respondeu, mas não autorizou o pedido. Confirma a versão e a configuração da API do ShadowMountPlus."
         return error
@@ -1180,11 +1141,13 @@ class DoctorApp(tk.Tk):
             if isinstance(data, dict) and data.get("status", 0) not in (0, None):
                 raise RuntimeError(f"A API respondeu com erro: {data}")
             return lambda app: app._show_api_result(data)
-        self._async_action(self._connection_action_buttons(), job)
+        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
 
     def _show_api_result(self, data):
         version = data.get("shadowmount_version", "desconhecida") if isinstance(data, dict) else "desconhecida"
         self.last_api_version = version
+        if hasattr(self, "api_version_var"):
+            self.api_version_var.set(tr("Versão da API: ") + str(version))
         self._set_conn_status("✅ Ligação confirmada")
         self._set_api_info("Agora clica em «Obter logs e analisar» para analisar os logs reais da PS5.")
         self._set_status("Ligação confirmada ✅", "ok")
@@ -1212,7 +1175,7 @@ class DoctorApp(tk.Tk):
                 raise RuntimeError("Não foi possível importar nenhum log. " + " | ".join(errors))
             version_name = version.get("shadowmount_version", "desconhecida") if isinstance(version, dict) else "desconhecida"
             return lambda app: app._logs_fetched(outputs, errors, version_name)
-        self._async_action(self._connection_action_buttons(), job)
+        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
 
     def inspect_scanner(self):
         """Read scanner configuration and manual sources from supported API routes."""
@@ -1257,7 +1220,7 @@ class DoctorApp(tk.Tk):
             version_name = str(version.get("shadowmount_version", "desconhecida"))
             return lambda app: app._show_scanner_snapshot(snapshot, version_name)
 
-        self._async_action(self._connection_action_buttons(), job)
+        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
 
     def _show_scanner_snapshot(self, snapshot, version):
         self.last_scanner_snapshot = snapshot
@@ -1335,6 +1298,9 @@ class DoctorApp(tk.Tk):
         self.last_analyzed_context = {}
         self._set_source_status("ORIGEM: logs reais recolhidos da PS5 · o exemplo fictício foi descartado.")
         self.last_api_version = version
+        self._refresh_sources_panel()
+        if hasattr(self, "api_version_var"):
+            self.api_version_var.set(tr("Versão da API: ") + str(version))
         self._set_conn_status("✅ PS5 ligada")
         self._set_api_info(f"✅ Logs recebidos. Foram obtidos {len(outputs)} ficheiro(s) de log. Clica em «Resultado» para ver a análise.")
         message = f"Recolhidos {len(outputs)} log(s) da PS5. Os dados anteriores foram substituídos."
@@ -1353,13 +1319,13 @@ class DoctorApp(tk.Tk):
         heading.pack(fill="x")
         title_frame = ttk.Frame(heading, style="Panel.TFrame")
         title_frame.pack(side="left", fill="x", expand=True)
-        ttk.Label(title_frame, text=f"{number}. {finding.title}", style="Panel.TLabel", font=("Segoe UI", 11, "bold"), wraplength=790).pack(anchor="w")
+        ttk.Label(title_frame, text=f"{number}. {finding.title}", style="Panel.TLabel", font=("Segoe UI", 11, "bold"), wraplength=640).pack(anchor="w")
         ttk.Label(heading, text=finding.severity, style="Panel.TLabel", foreground=color, font=("Segoe UI", 9, "bold")).pack(side="right", anchor="n", padx=(8, 0))
         ttk.Label(card, text=finding.summary, style="PanelSub.TLabel", wraplength=940, justify="left").pack(anchor="w", pady=(7, 4))
 
         info_line = f"Fiabilidade estimada: {finding.confidence}" if finding.confidence else ""
         if info_line:
-            ttk.Label(card, text=info_line, style="PanelSub.TLabel", wraplength=930).pack(anchor="w", pady=(0, 2))
+            ttk.Label(card, text=info_line, style="PanelSub.TLabel", wraplength=700).pack(anchor="w", pady=(0, 2))
 
         details = ttk.Frame(card, style="Panel.TFrame")
         state = {"built": False}
@@ -1369,12 +1335,12 @@ class DoctorApp(tk.Tk):
         def build_details():
             ttk.Separator(details).pack(fill="x", pady=(3, 10))
             ttk.Label(details, text=f"Identificador: {finding.rule_id}", style="PanelSub.TLabel").pack(anchor="w", pady=(0, 3))
-            ttk.Label(details, text=f"Referência: {evidence_status_pt(finding.evidence_status)}", style="PanelSub.TLabel", wraplength=930).pack(anchor="w", pady=(0, 7))
+            ttk.Label(details, text=f"Referência: {evidence_status_pt(finding.evidence_status)}", style="PanelSub.TLabel", wraplength=700).pack(anchor="w", pady=(0, 7))
             if finding.context_relevance and finding.context_relevance != "Não necessário":
                 relevance_color = GREEN if finding.context_relevance == "Contexto compatível" else RED if finding.context_relevance == "Contexto divergente" else AMBER
                 ttk.Label(details, text=f"Contexto: {finding.context_relevance}", style="Panel.TLabel", foreground=relevance_color, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 4))
             if finding.context_note:
-                ttk.Label(details, text=finding.context_note, style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(0, 8))
+                ttk.Label(details, text=finding.context_note, style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w", pady=(0, 8))
             if finding.evidence:
                 ttk.Label(details, text="Linha(s) encontrada(s)", style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w")
                 evidence_box = tk.Text(details, height=min(4, max(1, len(finding.evidence))), wrap="word", bg=INPUT, fg=TEXT, insertbackground=TEXT, selectbackground=ACCENT, selectforeground=SELECT_TEXT, relief="solid", borderwidth=1, highlightthickness=0, font=("Consolas", 9), padx=8, pady=7)
@@ -1383,14 +1349,14 @@ class DoctorApp(tk.Tk):
                 evidence_box.configure(state="disabled")
             if finding.fix_summary:
                 ttk.Label(details, text="Orientação", style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w")
-                ttk.Label(details, text=finding.fix_summary, style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(4, 8))
+                ttk.Label(details, text=finding.fix_summary, style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w", pady=(4, 8))
             if finding.next_steps:
                 ttk.Label(details, text="O que fazer a seguir", style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w")
                 for index, step in enumerate(finding.next_steps, 1):
-                    ttk.Label(details, text=f"{index}. {step}", style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(4, 0))
+                    ttk.Label(details, text=f"{index}. {step}", style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w", pady=(4, 0))
             if finding.applicability:
                 ttk.Label(details, text="Limites", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(9, 0))
-                ttk.Label(details, text=finding.applicability, style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(3, 0))
+                ttk.Label(details, text=finding.applicability, style="PanelSub.TLabel", wraplength=700, justify="left").pack(anchor="w", pady=(3, 0))
             if finding.sources:
                 links = ttk.Frame(details, style="Panel.TFrame")
                 links.pack(fill="x", pady=(10, 0))
@@ -1450,7 +1416,6 @@ class DoctorApp(tk.Tk):
             )
             for number, finding in enumerate(self.findings, 1):
                 self._render_finding(finding, number)
-        self.tabs.select(self.diag_tab)
         origin = "exemplo fictício" if self.demo_mode else ("logs da PS5" if any("PS5" in src or "ShadowMountPlus debug.log" in src or "Kernel log" in src for src in self.sources) else "logs carregados")
         self._set_status(f"Análise concluída: {len(self.findings)} resultado(s) · origem: {origin}. A consola não foi alterada.", "ok" if self.findings else "warning")
 
@@ -1589,7 +1554,7 @@ class DoctorApp(tk.Tk):
 
         rename_tab = ttk.Frame(notebook, padding=12)
         notebook.add(rename_tab, text="Renomeações reversíveis")
-        ttk.Label(rename_tab, text="A aplicação só pode reverter os testes de nome que registou. Não sobrescreve o nome original se já existir um ficheiro com esse nome.", style="Sub.TLabel", wraplength=780).pack(anchor="w", pady=(0, 8))
+        ttk.Label(rename_tab, text="A aplicação só pode reverter os testes de nome que registou. Não sobrescreve o nome original se já existir um ficheiro com esse nome.", style="Sub.TLabel", wraplength=640).pack(anchor="w", pady=(0, 8))
         listbox = tk.Listbox(rename_tab, bg=INPUT, fg=TEXT, selectbackground=ACCENT, selectforeground=SELECT_TEXT, relief="flat", height=12, font=("Consolas", 9))
         listbox.pack(fill="both", expand=True)
         records = list_actions()
@@ -1597,7 +1562,7 @@ class DoctorApp(tk.Tk):
             label = f"[{_action_status_label(record.get('status'))}] {record.get('new_name','?')}  |  ID {record.get('id','?')}"
             listbox.insert("end", label)
         detail = tk.StringVar(value=tr("Seleciona uma alteração para ver os caminhos e o estado."))
-        ttk.Label(rename_tab, textvariable=detail, style="Panel.TLabel", wraplength=780).pack(anchor="w", pady=(8, 8))
+        ttk.Label(rename_tab, textvariable=detail, style="Panel.TLabel", wraplength=640).pack(anchor="w", pady=(8, 8))
         buttonrow = ttk.Frame(rename_tab)
         buttonrow.pack(fill="x")
         def on_select(_event=None):
@@ -1634,14 +1599,14 @@ class DoctorApp(tk.Tk):
 
         resolution_tab = ttk.Frame(notebook, padding=12)
         notebook.add(resolution_tab, text="Planos de resolução")
-        ttk.Label(resolution_tab, text="Progresso guardado no computador. Estes registos são notas locais; não indicam que a app tenha executado uma correção na PS5.", style="Sub.TLabel", wraplength=780).pack(anchor="w", pady=(0, 8))
+        ttk.Label(resolution_tab, text="Progresso guardado no computador. Estes registos são notas locais; não indicam que a app tenha executado uma correção na PS5.", style="Sub.TLabel", wraplength=640).pack(anchor="w", pady=(0, 8))
         plan_list = tk.Listbox(resolution_tab, bg=INPUT, fg=TEXT, selectbackground=ACCENT, selectforeground=SELECT_TEXT, relief="flat", height=12, font=("Consolas", 9))
         plan_list.pack(fill="both", expand=True)
         history = self._read_resolution_history()["entries"]
         for item in reversed(history):
             plan_list.insert("end", f"[{_result_label(item.get('result', '?'))}] {item.get('rule_id','?')} · {item.get('created_at','')}")
         plan_detail = tk.StringVar(value=tr("Seleciona um plano para ver as notas."))
-        ttk.Label(resolution_tab, textvariable=plan_detail, style="Panel.TLabel", wraplength=780).pack(anchor="w", pady=(8, 0))
+        ttk.Label(resolution_tab, textvariable=plan_detail, style="Panel.TLabel", wraplength=640).pack(anchor="w", pady=(8, 0))
         def on_plan_select(_event=None):
             sel = plan_list.curselection()
             if not sel:

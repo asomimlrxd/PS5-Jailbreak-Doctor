@@ -3,6 +3,7 @@ __pycache__/
 /build/
 /dist/
 *.spec
+!PS5JailbreakDoctor.spec
 .env/
 .venv/
 venv/
@@ -10,4 +11,3 @@ settings.json
 resolution_history.json
 changes_journal.json
 *.log
-ps5-relay/build/
