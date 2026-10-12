@@ -58,6 +58,11 @@ UI_PT_EN = {
     "ENDEREÇO DA CONSOLA": "CONSOLE ADDRESS",
     "IP da PS5": "PS5 IP address",
     "Porta": "Port",
+    "Configuração recomendada do ShadowMountPlus": "Recommended ShadowMountPlus configuration",
+    "Para permitir a ligação a partir do PC sem perder o acesso local à interface do ShadowMountPlus, usa api_bind_address=0.0.0.0. Não coloques aqui o IP específico da PS5: esse IP é introduzido no campo «IP da PS5» acima.": "To connect from the PC while keeping local access to the ShadowMountPlus interface, use api_bind_address=0.0.0.0. Do not put the PS5's specific IP here; enter that IP in the PS5 IP address field above.",
+    "Copiar linha recomendada": "Copy recommended line",
+    "Em /data/shadowmount/config.ini, substitui a linha api_bind_address existente; não adiciones uma segunda linha duplicada. Como a API não tem autenticação, usa esta configuração apenas numa rede privada de confiança e nunca encaminhes a porta no router.": "In /data/shadowmount/config.ini, replace the existing api_bind_address line; do not add a duplicate line. The API has no authentication, so use this setting only on a trusted private network and never forward the port on your router.",
+    "Linha copiada. Substitui a linha existente em config.ini; não adiciones uma linha duplicada.": "Line copied. Replace the existing line in config.ini; do not add a duplicate line.",
     "Testar ligação": "Test connection",
     "Obter logs e analisar": "Get logs & analyze",
     "Ainda não ligado. Clica em «Testar ligação» para começar.": "Not connected yet. Click “Test connection” to begin.",
@@ -88,7 +93,7 @@ UI_PT_EN = {
     "Contexto limpo. Os logs continuam carregados.": "Context cleared. The logs are still loaded.",
     "A contactar a PS5 na rede local…": "Contacting the PS5 on the local network…",
     "A ligação expirou. Confirma o IP, a porta e se a API do ShadowMountPlus aceita ligações da rede local.": "The connection timed out. Check the IP address, port, and whether the ShadowMountPlus API accepts local-network connections.",
-    "A PS5 recusou a ligação. Confirma que o ShadowMountPlus está ativo e que a API está configurada para aceitar ligações da LAN.": "The PS5 refused the connection. Check that ShadowMountPlus is running and that its API accepts LAN connections.",
+    "A ligação foi recusada. Confirma que o ShadowMountPlus está ativo e que a porta/API estão corretas. Para acesso pela LAN, usa api_bind_address=0.0.0.0 em config.ini, não o IP específico da PS5; introduz o IP da consola apenas no campo «IP da PS5» do Doctor. Isto pode também restaurar o acesso à interface local do ShadowMountPlus se deixaste de a conseguir abrir depois de configurar o bind.": "The connection was refused. Check that ShadowMountPlus is running and the API port is correct. For LAN access, use api_bind_address=0.0.0.0 in config.ini, not the PS5's specific IP; enter the console IP only in the Doctor's PS5 IP field. This may also restore local access to the ShadowMountPlus interface if it stopped opening after you changed the bind address.",
     "A API respondeu, mas não autorizou o pedido. Confirma a versão e a configuração da API do ShadowMountPlus.": "The API responded but did not authorize the request. Check the ShadowMountPlus API version and configuration.",
     "Agora clica em «Obter logs e analisar» para analisar os logs reais da PS5.": "Now click “Get logs & analyze” to analyze real PS5 logs.",
     "Ainda não há logs": "No logs yet",
@@ -766,5 +771,34 @@ def install_tkinter_translation() -> None:
         setattr(filedialog, name, make_dialog(original))
 
     _PATCHED = True
+
+
+UI_PT_EN.update({
+    "Liga ao ShadowMountPlus sem editar manualmente o config.ini.": "Connect to ShadowMountPlus without manually editing config.ini.",
+    "MODO DE LIGAÇÃO": "CONNECTION MODE",
+    "Relay ELF (sem alterar config.ini)": "ELF relay (no config.ini changes)",
+    "API direta (requer acesso pela LAN)": "Direct API (LAN access required)",
+    "Ligação automática (sem config.ini)": "Connect automatically (no config.ini)",
+    "Procurar relay na rede": "Find relay on network",
+    "Como funciona a ligação automática": "How automatic connection works",
+    "O modo recomendado carrega um pequeno relay ELF na PS5 através do loader de payloads (normalmente a porta 9021). O relay lê a configuração existente para localizar a API, não altera config.ini e permite que o launcher local continue a usar 127.0.0.1:10101, mesmo se a API tiver sido associada a um IP específico. O Doctor procura o relay automaticamente; se a descoberta por broadcast for bloqueada, podes introduzir o IP da PS5 acima.": "The recommended mode loads a small relay ELF on the PS5 through the payload loader (usually port 9021). The relay reads the existing configuration to locate the API, does not modify config.ini, and lets the local launcher keep using 127.0.0.1:10101 even if the API is bound to a specific IP. Doctor searches for the relay automatically; if broadcast discovery is blocked, enter the PS5 IP above.",
+    "O relay expõe pela rede apenas endpoints de leitura de versão, logs e configuração do scanner. Precisa de ser carregado novamente após um reinício completo, salvo se já utilizares um autoloader de payloads. O modo «API direta» continua disponível para quem já tenha acesso LAN configurado no ShadowMountPlus.": "The relay exposes only read-only version, log, and scanner-configuration endpoints over the network. It must be loaded again after a full reboot unless you already use a payload autoloader. Direct API mode remains available if LAN access is already configured in ShadowMountPlus.",
+    "A ligação só acontece quando carregas num botão. O relay não altera ficheiros nem definições persistentes; inicia apenas um serviço temporário de diagnóstico. As leituras pela rede ficam limitadas a rotas de diagnóstico. Como os logs podem conter identificadores, usa apenas uma rede privada de confiança e nunca encaminhes as portas 10102 ou 10103 para a Internet.": "The app only connects when you click a button. The relay does not change files or persistent settings; it only starts a temporary diagnostic service. Network access is limited to diagnostic routes. Logs may contain identifiers, so use only a trusted private network and never forward ports 10102 or 10103 to the Internet.",
+    "Relay ativo. Agora podes obter os logs reais da PS5.": "Relay is active. You can now fetch the real PS5 logs.",
+    "Não encontrei um relay ativo. Introduz o IP atual da PS5 para carregar o ELF através do loader.": "No active relay was found. Enter the PS5's current IP to load the ELF through the payload loader.",
+    "Não foi encontrado um relay ativo na rede local.": "No active relay was found on the local network.",
+    "Clica em «Ligação automática» para carregar o ELF, ou confirma que o PC e a PS5 estão na mesma rede.": "Click ‘Connect automatically’ to load the ELF, or confirm that the PC and PS5 are on the same network.",
+    "Introduz o IP atual da PS5 para carregar o ELF através do loader.": "Enter the PS5's current IP to load the ELF through the payload loader.",
+    "Relay já estava ativo.": "The relay was already active.",
+    "Relay encontrado na rede.": "Relay found on the network.",
+    "Relay ligado a ": "Relay connected to ",
+    "Configuração do ShadowMountPlus não alterada.": "ShadowMountPlus configuration was not changed.",
+    "O payload foi enviado (": "The payload was sent (",
+    " bytes), mas o relay não respondeu na porta ": " bytes), but the relay did not respond on port ",
+    "Confirma que o loader da PS5 aceita payloads na porta 9021, que a consola e o PC estão na mesma rede e que a versão do ShadowMountPlus tem a API ativa.": "Confirm that the PS5 payload loader accepts payloads on port 9021, that the console and PC are on the same network, and that the ShadowMountPlus API is enabled.",
+    "Se o broadcast for bloqueado, tenta «Procurar relay na rede» ou reinicia a ligação.": "If broadcast is blocked, try ‘Find relay on network’ or restart the connection.",
+    " Último erro: ": " Last error: ",
+    "A API do ShadowMountPlus está desativada. O relay não vai alterar config.ini.": "The ShadowMountPlus API is disabled. The relay will not modify config.ini.",
+})
 
 _TRANSLATIONS.update(UI_PT_EN)

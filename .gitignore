@@ -10,3 +10,4 @@ settings.json
 resolution_history.json
 changes_journal.json
 *.log
+ps5-relay/build/

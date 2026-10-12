@@ -23,6 +23,8 @@ from safe_actions import list_actions, rename_for_rule, rollback_action
 from session_utils import format_source_blocks
 from app_paths import data_path
 from updates import check_for_updates, download_update, install_update, latest_backup, restore_last_backup, UpdateError
+from relay_client import (discover_relay, send_relay_elf, RelayError, RELAY_PORT, LOADER_PORT,
+                           preferred_connection_mode, preferred_connection_port)
 from i18n import set_language as set_ui_language, tr, register_knowledge_base, install_tkinter_translation
 
 register_knowledge_base(KNOWLEDGE_BASE)
@@ -228,6 +230,9 @@ class DoctorApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.settings = self._load_settings()
+        saved_connection_mode = preferred_connection_mode(self.settings)
+        # Relay mode is the default for fresh and legacy installs: no config.ini edits.
+        self.settings["connection_mode"] = saved_connection_mode
         self.language = "en" if self.settings.get("language") == "en" else "pt"
         set_ui_language(self.language)
         _set_context_option_language(self.language)
@@ -271,7 +276,8 @@ class DoctorApp(tk.Tk):
         return {}
 
     def _save_settings(self):
-        data = {"host": self.host.get().strip(), "port": self.port.get().strip(), "theme": self.theme_name, "language": self.language}
+        data = {"host": self.host.get().strip(), "port": self.port.get().strip(), "theme": self.theme_name, "language": self.language,
+                "connection_mode": getattr(self, "connection_mode_code", self.settings.get("connection_mode", "relay"))}
         if hasattr(self, "context_vars"):
             data["context"] = self._get_context()
         try:
@@ -354,6 +360,9 @@ class DoctorApp(tk.Tk):
 
         state = {
             "log_text": log_text, "active_tab": active_tab, "context": current_context,
+            "host": self.host.get().strip() if hasattr(self, "host") else str(self.settings.get("host", "")),
+            "port": self.port.get().strip() if hasattr(self, "port") else str(self.settings.get("port", RELAY_PORT)),
+            "connection_mode": getattr(self, "connection_mode_code", self.settings.get("connection_mode", "relay")),
             "sources": list(getattr(self, "sources", [])),
             "demo_mode": bool(getattr(self, "demo_mode", False)),
             "findings": list(getattr(self, "findings", [])),
@@ -368,6 +377,9 @@ class DoctorApp(tk.Tk):
         }
         self.settings["context"] = current_context
         self.settings["language"] = new_language
+        self.settings["host"] = state["host"]
+        self.settings["port"] = state["port"]
+        self.settings["connection_mode"] = state["connection_mode"]
         self.language = new_language
         set_ui_language(new_language)
         _set_context_option_language(new_language)
@@ -662,35 +674,167 @@ class DoctorApp(tk.Tk):
         intro = ttk.Frame(self.connection_tab, padding=(16, 10, 16, 12))
         intro.pack(fill="x")
         ttk.Label(intro, text="Ligar à PS5", style="Section.TLabel").pack(anchor="w")
-        ttk.Label(intro, text="Usa a API de leitura do ShadowMountPlus para obter automaticamente os logs mais recentes.", style="Sub.TLabel", wraplength=850).pack(anchor="w", pady=(3, 0))
+        ttk.Label(intro, text="Liga ao ShadowMountPlus sem editar manualmente o config.ini.", style="Sub.TLabel", wraplength=850).pack(anchor="w", pady=(3, 0))
 
         panel = ttk.Frame(self.connection_tab, style="Panel.TFrame", padding=18)
         panel.pack(fill="x", padx=14, pady=(0, 12))
-        ttk.Label(panel, text="ENDEREÇO DA CONSOLA", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 12))
+        ttk.Label(panel, text="MODO DE LIGAÇÃO", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 12), pady=(0, 12))
+        self.connection_mode_code = self.settings.get("connection_mode", "relay")
+        self.connection_mode_var = tk.StringVar(value=tr("Relay ELF (sem alterar config.ini)") if self.connection_mode_code == "relay" else tr("API direta (requer acesso pela LAN)"))
+        self.connection_mode_combo = ttk.Combobox(
+            panel, textvariable=self.connection_mode_var, state="readonly", width=38,
+            values=(tr("Relay ELF (sem alterar config.ini)"), tr("API direta (requer acesso pela LAN)")),
+        )
+        self.connection_mode_combo.grid(row=0, column=1, columnspan=3, sticky="w", pady=(0, 12))
+        self.connection_mode_combo.bind("<<ComboboxSelected>>", self._on_connection_mode_change)
+
         ttk.Label(panel, text="IP da PS5", style="Panel.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 8))
-        self.host = tk.StringVar(value=str(self.settings.get("host", "192.168.1.166")))
+        self.host = tk.StringVar(value=str(self.settings.get("host", "")))
         ttk.Entry(panel, textvariable=self.host, width=24).grid(row=1, column=1, sticky="w", padx=(0, 22))
         ttk.Label(panel, text="Porta", style="Panel.TLabel").grid(row=1, column=2, sticky="w", padx=(0, 8))
-        self.port = tk.StringVar(value=str(self.settings.get("port", "10101")))
-        ttk.Entry(panel, textvariable=self.port, width=10).grid(row=1, column=3, sticky="w")
+        self.port = tk.StringVar(value=preferred_connection_port(self.settings, self.connection_mode_code))
+        self.port_entry = ttk.Entry(panel, textvariable=self.port, width=10,
+                                    state="readonly" if self.connection_mode_code == "relay" else "normal")
+        self.port_entry.grid(row=1, column=3, sticky="w")
+
+        buttons_primary = ttk.Frame(panel, style="Panel.TFrame")
+        buttons_primary.grid(row=2, column=0, columnspan=4, sticky="w", pady=(14, 0))
+        self.btn_activate_relay = ttk.Button(buttons_primary, text="Ligação automática (sem config.ini)", style="Accent.TButton", command=self.activate_relay)
+        self.btn_activate_relay.pack(side="left", padx=(0, 8))
+        self.btn_find_relay = ttk.Button(buttons_primary, text="Procurar relay na rede", command=self.find_relay)
+        self.btn_find_relay.pack(side="left")
+
         buttons = ttk.Frame(panel, style="Panel.TFrame")
-        buttons.grid(row=2, column=0, columnspan=4, sticky="w", pady=(14, 0))
+        buttons.grid(row=3, column=0, columnspan=4, sticky="w", pady=(8, 0))
         self.btn_test = ttk.Button(buttons, text="Testar ligação", command=self.test_api)
         self.btn_test.pack(side="left", padx=(0, 8))
-        ttk.Button(buttons, text="Obter logs e analisar", style="Accent.TButton", command=self.fetch_logs).pack(side="left", padx=(0, 8))
+        self.btn_fetch = ttk.Button(buttons, text="Obter logs e analisar", style="Accent.TButton", command=self.fetch_logs)
+        self.btn_fetch.pack(side="left", padx=(0, 8))
         self.btn_scanner = ttk.Button(buttons, text=tr("Verificar scanner"), command=self.inspect_scanner)
         self.btn_scanner.pack(side="left")
         self.api_info = tk.StringVar(value=tr("Ainda não ligado. Clica em «Testar ligação» para começar."))
         self.api_info_label = ttk.Label(panel, textvariable=self.api_info, style="PanelSub.TLabel", wraplength=900, justify="left")
-        self.api_info_label.grid(row=3, column=0, columnspan=4, sticky="w", pady=(12, 0))
+        self.api_info_label.grid(row=4, column=0, columnspan=4, sticky="w", pady=(12, 0))
+
+        config_help = ttk.Frame(self.connection_tab, style="Panel.TFrame", padding=16)
+        config_help.pack(fill="x", padx=14, pady=(0, 12))
+        ttk.Label(config_help, text="Como funciona a ligação automática", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
+        ttk.Label(
+            config_help,
+            text=("O modo recomendado carrega um pequeno relay ELF na PS5 através do loader de payloads (normalmente a porta 9021). "
+                  "O relay lê a configuração existente para localizar a API, não altera config.ini e permite que o launcher local continue a usar 127.0.0.1:10101, "
+                  "mesmo se a API tiver sido associada a um IP específico. O Doctor procura o relay automaticamente; se a descoberta por broadcast for bloqueada, podes introduzir o IP da PS5 acima."),
+            style="PanelSub.TLabel", wraplength=950, justify="left"
+        ).pack(anchor="w", pady=(6, 0))
+        ttk.Label(
+            config_help,
+            text=("O relay expõe pela rede apenas endpoints de leitura de versão, logs e configuração do scanner. Precisa de ser carregado novamente após um reinício completo, "
+                  "salvo se já utilizares um autoloader de payloads. O modo «API direta» continua disponível para quem já tenha acesso LAN configurado no ShadowMountPlus."),
+            style="PanelSub.TLabel", wraplength=950, justify="left"
+        ).pack(anchor="w", pady=(7, 0))
 
         safety = ttk.Frame(self.connection_tab, style="Panel.TFrame", padding=16)
         safety.pack(fill="x", padx=14)
         ttk.Label(safety, text="Privacidade e segurança", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
         ttk.Label(safety, text=(
-            "A ligação só acontece quando carregas num botão. A API não tem autenticação: usa-a apenas numa rede local de confiança, nunca na Internet. "
-            "Esta aplicação só lê a versão, os logs e os detalhes do scanner; não altera a consola."
+            "A ligação só acontece quando carregas num botão. O relay não altera ficheiros nem definições persistentes; inicia apenas um serviço temporário de diagnóstico. As leituras pela rede ficam limitadas a rotas de diagnóstico. "
+            "Como os logs podem conter identificadores, usa apenas uma rede privada de confiança e nunca encaminhes as portas 10102 ou 10103 para a Internet."
         ), style="PanelSub.TLabel", wraplength=950, justify="left").pack(anchor="w", pady=(6, 0))
+
+    def _on_connection_mode_change(self, _event=None):
+        direct_label = tr("API direta (requer acesso pela LAN)")
+        self.connection_mode_code = "direct" if self.connection_mode_var.get() == direct_label else "relay"
+        self.settings["connection_mode"] = self.connection_mode_code
+        self.port.set("10101" if self.connection_mode_code == "direct" else str(RELAY_PORT))
+        if hasattr(self, "port_entry"):
+            self.port_entry.configure(state="normal" if self.connection_mode_code == "direct" else "readonly")
+        self._save_settings()
+
+    def _connection_action_buttons(self):
+        return [button for button in (
+            getattr(self, "btn_activate_relay", None), getattr(self, "btn_find_relay", None),
+            getattr(self, "btn_test", None), getattr(self, "btn_fetch", None), getattr(self, "btn_scanner", None),
+        ) if button is not None]
+
+    @staticmethod
+    def _check_api_version(host: str, port: int | str, timeout: float = 4.0):
+        data = api_post(host, str(port), "/api/v1/version", {}, timeout=timeout)
+        if not isinstance(data, dict) or data.get("status", 0) not in (0, None):
+            raise RelayError(f"O endpoint de versão não devolveu uma resposta válida: {data}")
+        return data
+
+    def _relay_ready(self, host: str, port: int, data: dict, note: str = ""):
+        self.host.set(host)
+        self.port.set(str(port))
+        self.connection_mode_code = "relay"
+        self.settings["connection_mode"] = "relay"
+        self.connection_mode_var.set(tr("Relay ELF (sem alterar config.ini)"))
+        self.last_api_version = str(data.get("shadowmount_version", "desconhecida"))
+        self._save_settings()
+        self._set_conn_status("✅ Ligação confirmada")
+        self._set_api_info(tr("Relay ativo. Agora podes obter os logs reais da PS5."))
+        extra = f" {note}" if note else ""
+        self._set_status(f"Relay ligado a {host}:{port}. Configuração do ShadowMountPlus não alterada.{extra}", "ok")
+
+    def find_relay(self):
+        def job():
+            found = discover_relay(timeout=2.5)
+            if not found:
+                raise RelayError("Não foi encontrado um relay ativo na rede local. Clica em «Ligação automática» para carregar o ELF, ou confirma que o PC e a PS5 estão na mesma rede.")
+            host, port = found
+            data = self._check_api_version(host, port)
+            return lambda app: app._relay_ready(host, port, data, "Relay encontrado na rede.")
+        self._async_action(self._connection_action_buttons(), job)
+
+    def activate_relay(self):
+        def job():
+            # First reuse a relay that is already running; avoid loading duplicates.
+            found = None
+            try:
+                found = discover_relay(timeout=1.4)
+            except RelayError:
+                pass
+            if found:
+                host, port = found
+                data = self._check_api_version(host, port)
+                return lambda app: app._relay_ready(host, port, data, "Relay já estava ativo.")
+
+            host = self.host.get().strip()
+            if not host:
+                raise RelayError("Não encontrei um relay ativo. Introduz o IP atual da PS5 para carregar o ELF através do loader.")
+
+            # A broadcast response can be blocked by some access points. Try a direct
+            # check against the saved console address before injecting another payload.
+            try:
+                data = self._check_api_version(host, RELAY_PORT, timeout=1.2)
+                return lambda app: app._relay_ready(host, RELAY_PORT, data, "Relay já estava ativo.")
+            except Exception:
+                pass
+
+            sent_bytes = send_relay_elf(host, port=LOADER_PORT)
+            last_error = None
+            for _ in range(10):
+                try:
+                    found = discover_relay(timeout=0.8)
+                    if found:
+                        found_host, found_port = found
+                        data = self._check_api_version(found_host, found_port, timeout=1.2)
+                        return lambda app: app._relay_ready(found_host, found_port, data, f"Payload enviado ({sent_bytes:,} bytes).")
+                except Exception as exc:
+                    last_error = exc
+                # Discovery broadcasts can be blocked; query the selected console IP too.
+                try:
+                    data = self._check_api_version(host, RELAY_PORT, timeout=1.2)
+                    return lambda app: app._relay_ready(host, RELAY_PORT, data, f"Payload enviado ({sent_bytes:,} bytes).")
+                except Exception as exc:
+                    last_error = exc
+            reason = f" Último erro: {last_error}" if last_error else ""
+            raise RelayError(
+                f"O payload foi enviado ({sent_bytes:,} bytes), mas o relay não respondeu na porta {RELAY_PORT}. "
+                "Confirma que o loader da PS5 aceita payloads na porta 9021, que a consola e o PC estão na mesma rede e que a versão do ShadowMountPlus tem a API ativa. "
+                "Se o broadcast for bloqueado, tenta «Procurar relay na rede» ou reinicia a ligação." + reason
+            )
+        self._async_action(self._connection_action_buttons(), job)
 
     def _get_context(self) -> dict:
         reverse_maps = {
@@ -1021,9 +1165,11 @@ class DoctorApp(tk.Tk):
     def _friendly_error(error: str) -> str:
         low = error.lower()
         if "timed out" in low or "timeout" in low:
-            return "A ligação expirou. Confirma o IP, a porta e se a API do ShadowMountPlus aceita ligações da rede local."
+            return "A ligação expirou. Confirma que a PS5 e o PC estão na mesma rede. No modo relay, carrega em «Ligação automática»; no modo API direta, confirma se a API aceita ligações pela LAN."
         if "connection refused" in low or "actively refused" in low or "winerror 10061" in low:
-            return "A PS5 recusou a ligação. Confirma que o ShadowMountPlus está ativo e que a API está configurada para aceitar ligações da LAN."
+            return ("A ligação foi recusada. Confirma que o ShadowMountPlus e a API local estão ativos. "
+                    "Para evitar alterar config.ini, seleciona «Relay ELF» e carrega em «Ligação automática». "
+                    "O relay usa a API local existente e disponibiliza apenas os endpoints de leitura necessários ao Doctor.")
         if "forbidden" in low or "unauthorized" in low:
             return "A API respondeu, mas não autorizou o pedido. Confirma a versão e a configuração da API do ShadowMountPlus."
         return error
@@ -1034,7 +1180,7 @@ class DoctorApp(tk.Tk):
             if isinstance(data, dict) and data.get("status", 0) not in (0, None):
                 raise RuntimeError(f"A API respondeu com erro: {data}")
             return lambda app: app._show_api_result(data)
-        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
+        self._async_action(self._connection_action_buttons(), job)
 
     def _show_api_result(self, data):
         version = data.get("shadowmount_version", "desconhecida") if isinstance(data, dict) else "desconhecida"
@@ -1066,7 +1212,7 @@ class DoctorApp(tk.Tk):
                 raise RuntimeError("Não foi possível importar nenhum log. " + " | ".join(errors))
             version_name = version.get("shadowmount_version", "desconhecida") if isinstance(version, dict) else "desconhecida"
             return lambda app: app._logs_fetched(outputs, errors, version_name)
-        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
+        self._async_action(self._connection_action_buttons(), job)
 
     def inspect_scanner(self):
         """Read scanner configuration and manual sources from supported API routes."""
@@ -1111,7 +1257,7 @@ class DoctorApp(tk.Tk):
             version_name = str(version.get("shadowmount_version", "desconhecida"))
             return lambda app: app._show_scanner_snapshot(snapshot, version_name)
 
-        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
+        self._async_action(self._connection_action_buttons(), job)
 
     def _show_scanner_snapshot(self, snapshot, version):
         self.last_scanner_snapshot = snapshot
