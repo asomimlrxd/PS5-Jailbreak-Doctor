@@ -1,0 +1,819 @@
+{
+  "schema_version": 1,
+  "database_version": "2026.10.12.4",
+  "generated_at": "2026-10-12",
+  "language": "pt-PT",
+  "description": "Base de conhecimento local e expansível. Entradas diferenciam relatos comunitários, documentação e heurísticas. Algumas issues estão abertas ou têm follow-ups contraditórios; nenhum relato é tratado como correção universal. Revisto em 2026-10-12. v0.4.0 acrescenta comparação de contexto (formato da origem, armazenamento, evento que desencadeou e versões) para reduzir falsos positivos; assinaturas continuam a gerar hipóteses, nunca certeza.",
+  "rules": [
+    {
+      "id": "SHADOW_TITLE_DIR",
+      "title": "ShadowMountPlus: TitleDir bridge indisponível",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "titledir\\s+bridge\\s+unavailable",
+        "titledir\\s+unavailable",
+        "titledirr?\\s+unavailable",
+        "appinstalltitle?dir bridge unavailable",
+        "appinstallall hook is no longer installed"
+      ],
+      "summary": "O ShadowMountPlus não conseguiu utilizar a interface/hook TitleDir/AppInstallAll no momento do registo/instalação. Um relato descreve a perda do hook após retomar do modo de repouso. Só a mensagem não prova que os ficheiros do jogo estejam danificados.",
+      "steps": [
+        "Guarda o debug.log completo e identifica as linhas imediatamente antes e depois do aviso.",
+        "Se começou logo após retomar do modo de repouso, recarrega o payload ShadowMountPlus uma vez; se persistir, faz um reinício completo e testa novamente.",
+        "Confirma as versões exatas de firmware, ShadowMountPlus e KStuff Lite; regista se ocorre após retoma do modo de repouso ou também após arranque frio.",
+        "Se continuar, partilha um relatório anonimizado com o mantenedor. Não reinstales jogos como primeiro passo."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/147"
+      ],
+      "applicability": "Relatos incluem FW 13.40/13.60 e ShadowMountPlus 1.7beta3; num caso, começou após retomar do modo de repouso. Isso não prova que todos os casos tenham a mesma causa.",
+      "fix_summary": "Recarregar ShadowMountPlus depois da retoma ou reiniciar completamente é um teste de recuperação; não é uma correção universal confirmada.",
+      "context_conditions": {
+        "trigger": [
+          "after_resume"
+        ]
+      }
+    },
+    {
+      "id": "PRX_MODULE_LOAD",
+      "title": "Falha ao carregar um módulo PRX",
+      "severity": "Erro",
+      "confidence": "Alta para o significado; baixa para a causa",
+      "patterns": [
+        "prx_sce_module_load_error",
+        "0xa0020102",
+        "sce_module.{0,80}(?:failed|error|missing|not found)",
+        "module load error"
+      ],
+      "summary": "O loader falhou ao carregar um módulo da aplicação. A mensagem é genérica e, isoladamente, não identifica qual módulo ou porquê.",
+      "steps": [
+        "Regista o Title ID, a versão do jogo e o firmware para o qual a cópia foi preparada.",
+        "Inspeciona os logs completos em busca do nome do PRX imediatamente anterior ao erro.",
+        "Verifica a estrutura e integridade da cópia e se os ficheiros pertencem à mesma versão/região. Não copies PRX de outro jogo.",
+        "Evita remover ficheiros ou alterar backports até existir uma linha de log que aponte para um módulo concreto."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "heuristica_comunitaria",
+      "sources": [
+        "https://www.reddit.com/r/PS5_Jailbreak/comments/1trvz79/app_crashed_before_kstuff_pause/"
+      ],
+      "applicability": "O código é genérico; não identifica sozinho qual PRX falhou nem a causa.",
+      "fix_summary": "Não existe um fix universal: procura o primeiro erro anterior ao crash e o nome do módulo mencionado."
+    },
+    {
+      "id": "PARAM_JSON",
+      "title": "param.json ausente ou inválido",
+      "severity": "Erro",
+      "confidence": "Alta",
+      "patterns": [
+        "missing/invalid param\\.json",
+        "param\\.json.{0,80}(?:missing|invalid|not found|parse error|failed)",
+        "invalid.{0,30}param\\.json"
+      ],
+      "summary": "O scanner não conseguiu ler os metadados esperados para o título.",
+      "steps": [
+        "Para uma pasta de jogo, confirma se existe sce_sys/param.json na raiz esperada.",
+        "Para uma imagem, confirma que sce_sys/param.json está na raiz da imagem e não dentro de uma pasta adicional.",
+        "Abre o JSON num editor de texto e verifica se está completo e sintaticamente válido; mantém uma cópia antes de editar."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "heuristica",
+      "sources": [],
+      "applicability": "Regra geral; interpretar com o contexto completo.",
+      "fix_summary": "Confirma a existência e validade JSON de sce_sys/param.json na raiz esperada; não mistures metadados de versões diferentes."
+    },
+    {
+      "id": "SOURCE_NOT_STABLE",
+      "title": "A origem ainda não está estável",
+      "severity": "Aviso",
+      "confidence": "Alta",
+      "patterns": [
+        "source not stable yet",
+        "source.{0,50}not stable"
+      ],
+      "summary": "O ShadowMountPlus detetou que a origem pode ainda estar a ser copiada, escrita ou alterada.",
+      "steps": [
+        "Confirma que a cópia/extração terminou e que nenhum programa está a escrever nessa pasta ou imagem.",
+        "Espera alguns segundos e deixa o scanner repetir a verificação.",
+        "Se acontecer com uma origem inalterada, guarda o log e revê a configuração de estabilidade/varrimento suportada pela tua versão."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "heuristica",
+      "sources": [],
+      "applicability": "Regra geral; interpretar com o contexto completo.",
+      "fix_summary": "Espera que a cópia/extração termine, fecha ferramentas que escrevam no caminho e volta a analisar."
+    },
+    {
+      "id": "KLOG_BUSY",
+      "title": "O dispositivo de kernel log está ocupado",
+      "severity": "Aviso",
+      "confidence": "Alta para a mensagem; causa desconhecida",
+      "patterns": [
+        "open /dev/klog failed.{0,100}device busy",
+        "/dev/klog.{0,80}busy",
+        "send_klog.{0,80}device busy"
+      ],
+      "summary": "O componente de diagnóstico não conseguiu abrir /dev/klog porque o sistema reportou que o recurso está ocupado.",
+      "steps": [
+        "O log de kernel pode não ter sido recolhido; não interpretes a ausência de linhas como prova de que não houve crash.",
+        "Fecha apenas ferramentas de diagnóstico duplicadas e volta a tentar uma vez.",
+        "Se persistir, inclui esta mensagem no relatório e identifica qual payload/servidor de logs estava ativo."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "heuristica",
+      "sources": [],
+      "applicability": "Regra geral; interpretar com o contexto completo.",
+      "fix_summary": "Fecha clientes de log duplicados e tenta uma vez. A ausência de kernel log não prova que não houve crash."
+    },
+    {
+      "id": "API_REFUSED",
+      "title": "Ligação recusada ao serviço local da PS5",
+      "severity": "Aviso",
+      "confidence": "Alta",
+      "patterns": [
+        "connection refused",
+        "actively refused",
+        "errno\\s*111",
+        "winerror\\s*10061"
+      ],
+      "summary": "Uma ligação TCP foi recusada. Isso pode significar que o serviço não está ativo, está ligado apenas a localhost, ou a porta/endereço não correspondem.",
+      "steps": [
+        "Confirma que o payload/serviço esperado está a correr e que o endereço IP da PS5 não mudou.",
+        "Para a API do ShadowMountPlus, a documentação indica a porta 10101 por defeito e bind local 127.0.0.1 por defeito.",
+        "A API não tem autenticação: só a exponhas à LAN se confiares na rede e nunca a encaminhes para a Internet."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "documentacao_tecnica",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/blob/1.7/docs/api.md"
+      ],
+      "applicability": "Ligação entre PC e API HTTP do ShadowMountPlus.",
+      "fix_summary": "Verifica IP/porta e se a API aceita ligações LAN. A API não tem autenticação; nunca a exponhas à Internet."
+    },
+    {
+      "id": "APP_CRASH_BEFORE_KSTUFF",
+      "title": "A aplicação caiu antes da pausa do kstuff",
+      "severity": "Erro",
+      "confidence": "Média",
+      "patterns": [
+        "crashed before kstuff pause",
+        "app crashed before kstuff"
+      ],
+      "summary": "O diagnóstico reporta que a aplicação caiu antes de o fluxo do kstuff chegar ao ponto de pausa esperado.",
+      "steps": [
+        "Recolhe o log completo do crash e identifica o Title ID e a versão de firmware.",
+        "Compara com uma versão comprovadamente compatível da aplicação e do payload; não assumes que o backport foi aplicado corretamente só porque o log o diz.",
+        "Procura o primeiro erro anterior à mensagem de crash: normalmente é mais útil do que a última linha."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/74",
+        "https://github.com/drakmor/ShadowMountPlus/issues/135"
+      ],
+      "applicability": "Há relatos com formatos, firmwares e versões diferentes; a mensagem não implica automaticamente que KStuff seja a causa.",
+      "fix_summary": "Compara o formato de origem, versão do payload e log do crash; não alteres backports antes de haver uma pista concreta."
+    },
+    {
+      "id": "MISSING_LIBC_PRX",
+      "title": "Pode faltar libc.prx na localização esperada",
+      "severity": "Erro",
+      "confidence": "Média",
+      "patterns": [
+        "lack of a \\.prx file in /app0/sce_module",
+        "missing.{0,50}libc\\.prx",
+        "libc\\.prx.{0,50}(?:missing|not found|failed)"
+      ],
+      "summary": "O log indica que a pasta de módulos da aplicação pode não conter o PRX esperado. É necessário confirmar a estrutura concreta e a linha completa.",
+      "steps": [
+        "Verifica se existe sce_module/libc.prx na raiz da aplicação montada, quando esse formato de título o exige.",
+        "Confirma que a extração/cópia terminou sem erros e que o ficheiro pertence à mesma versão do jogo.",
+        "Não descarregues nem copies libc.prx de um título diferente para substituir o ficheiro."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "heuristica",
+      "sources": [],
+      "applicability": "Regra geral; interpretar com o contexto completo.",
+      "fix_summary": "Verifica caminho e integridade do ficheiro da mesma versão do título; nunca copies libc.prx de outro jogo."
+    },
+    {
+      "id": "SHADOW_INSTALL_FAILURE",
+      "title": "Falha genérica de registo/instalação no ShadowMountPlus",
+      "severity": "Aviso",
+      "confidence": "Baixa",
+      "patterns": [
+        "install.{0,30}(?:failed|failure|error)",
+        "registration.{0,30}(?:failed|failure|error)",
+        "\\[reg\\].{0,80}(?:failed|error)"
+      ],
+      "summary": "O log contém uma falha de instalação ou registo, mas não há ainda um marcador mais específico para concluir a causa.",
+      "steps": [
+        "Lê as 20–40 linhas antes deste evento para encontrar o primeiro erro.",
+        "Confirma os metadados e o caminho da origem, sem remover a entrada nem eliminar dados.",
+        "Inclui a versão do ShadowMountPlus e um relatório anonimizado se pedires ajuda."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "heuristica",
+      "sources": [],
+      "applicability": "Regra geral; interpretar com o contexto completo.",
+      "fix_summary": "O primeiro erro anterior ao resumo de falha costuma ser mais informativo. O código de saída ou a linha [REG] deve ser capturada."
+    },
+    {
+      "id": "SHADOW_SHELLCORE_HOOKS",
+      "title": "ShadowMountPlus não conseguiu instalar hooks do ShellCore",
+      "severity": "Erro",
+      "confidence": "Média",
+      "patterns": [
+        "failed to install shellcore hooks",
+        "install(?:ing)? shellcore hooks.{0,50}(?:failed|error)",
+        "sce.?shellcore.{0,50}hook.{0,50}(?:failed|error)"
+      ],
+      "summary": "O payload reportou falha ao instalar hooks necessários no ShellCore. Um relato público descreve este erro em versões beta diferentes e indica que não ocorria sempre; a causa não ficou estabelecida.",
+      "steps": [
+        "Confirma a versão exata do firmware, ShadowMountPlus e KStuff Lite e guarda o log de arranque completo.",
+        "Faz um reinício completo da consola e carrega os payloads uma vez, sem os enviar repetidamente.",
+        "Se continuar, testa um arranque limpo com o mínimo de payloads possível, alterando uma variável de cada vez.",
+        "Não substituas ficheiros de sistema nem alteres offsets/hooks manualmente; partilha o log com o mantenedor."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/109"
+      ],
+      "applicability": "Relatos de FW 11.60/12.70, ShadowMountPlus 1.7 alpha/beta e KStuff Lite 1.11; não generalizar a todos os firmwares.",
+      "fix_summary": "Reinício completo e teste de arranque limpo são passos diagnósticos, não uma solução confirmada."
+    },
+    {
+      "id": "SHADOW_REG_80F50005",
+      "title": "ShadowMountPlus: registo do título falhou (0x80F50005)",
+      "severity": "Erro",
+      "confidence": "Alta para o registo falhado; baixa para a causa",
+      "patterns": [
+        "0x80f50005"
+      ],
+      "summary": "O ShadowMountPlus registou uma falha no processo AppInstallAll/REG. Um relatório público viu o código apenas num título, enquanto outros jogos funcionavam; isso não prova uma causa universal nem significa necessariamente que a imagem esteja corrompida.",
+      "steps": [
+        "Regista o Title ID, o formato (pasta/.exfat/.ffpfs/.ffpfsc), firmware e versões de ShadowMountPlus/KStuff Lite.",
+        "Confirma no log as linhas AppInstallAll bridge consumed e [REG] FAIL para saber se o erro ocorre durante registo.",
+        "Se só falha um título, compara a estrutura e param.json desse título com o formato esperado; não reinstales tudo antes de recolher o log.",
+        "Confirma se o erro está registado como problema conhecido para essa versão; se persistir, anexa relatório anonimizado ao issue do mantenedor."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/141"
+      ],
+      "applicability": "Caso reportado para FC 27 (PPSA34015), FW 12.00, ShadowMountPlus 1.7beta5Fix1 e KStuff experimental 1.13; código isolado pode ocorrer noutro contexto.",
+      "fix_summary": "Não existe uma correção confirmada para todos os títulos. A evidência pública é específica a um jogo/versão."
+    },
+    {
+      "id": "SHADOW_MOUNT_INVALID_ARGUMENT_PFS",
+      "title": "Montagem PFS recusada com Invalid Argument (0x00000016)",
+      "severity": "Erro",
+      "confidence": "Média",
+      "patterns": [
+        "image mount failed.{0,100}(?:0x0*16|invalid argument)",
+        "0x00000016.{0,100}invalid argument",
+        "invalid argument.{0,100}(?:ffpfsc|ffpfs)"
+      ],
+      "summary": "A montagem da imagem PFS falhou com argumento inválido. Um caso público foi visto com .ffpfsc gerado a partir de um formato já existente e uma versão antiga do ShadowMountPlus; o código pode depender do formato e da versão.",
+      "steps": [
+        "Confirma a extensão, como a imagem foi criada e se a versão atual do ShadowMountPlus documenta esse formato.",
+        "Testa uma cópia intacta da mesma imagem, sem a renomear nem reescrever o conteúdo; guarda hash e tamanho.",
+        "Se só uma imagem falha, testa-a com a ferramenta de validação/criação suportada pelo projeto e compara o log completo."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario_fechado_ou_antigo",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/56"
+      ],
+      "applicability": "Relato antigo com FW 10.01, KStuff Lite 1.06 e ShadowMountPlus 1.6test15; a aplicabilidade à 1.7 é incerta.",
+      "fix_summary": "Confirmar compatibilidade do formato e recriar a imagem apenas a partir de uma origem intacta são os passos mais seguros; não há fix universal confirmado."
+    },
+    {
+      "id": "SHADOW_PFS_PARENTHESES_PANIC",
+      "title": "Possível bug com parênteses no nome de imagem PFS",
+      "severity": "Erro",
+      "confidence": "Média",
+      "patterns": [
+        "kernel panic",
+        "parenthes(?:is|es)",
+        "\\.(?:ffpfs|ffpfsc)"
+      ],
+      "all_patterns": [
+        "kernel panic",
+        "parenthes(?:is|es)",
+        "\\.(?:ffpfs|ffpfsc)"
+      ],
+      "summary": "Foi reportado um kernel panic quando um ficheiro .ffpfs/.ffpfsc com parênteses no nome era detetado/montado. O relato indicou que retirar os parênteses resolveu aquele caso específico.",
+      "steps": [
+        "Se a linha de log e o formato correspondem exatamente ao cenário, desliga o auto-scan antes de renomear.",
+        "Renomeia apenas o ficheiro de origem para um nome curto sem parênteses, mantendo a extensão; não alteres o conteúdo.",
+        "Volta a testar e verifica se o crash desaparece. Se não corresponder a este cenário, não trates o nome como causa."
+      ],
+      "fix_type": "solucao_relata_com_cuidado",
+      "evidence_status": "relato_comunitario",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/66"
+      ],
+      "applicability": "Relato com ShadowMountPlus 1.6test15-fix2, FW 6.02; a correção é específica e pode ter sido resolvida em versões recentes.",
+      "fix_summary": "Remover parênteses do nome foi uma solução relatada para um caso antigo; não modificar imagem e manter cópia de segurança.",
+      "context_conditions": {
+        "origin_type": [
+          "image_pfs"
+        ],
+        "firmware": [
+          "6.02"
+        ],
+        "shadowmount_version": [
+          "1.6test15-fix2"
+        ]
+      }
+    },
+    {
+      "id": "SHADOW_FILENAME_TOO_LONG",
+      "title": "Possível limite no comprimento do nome do ficheiro",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "maximum filename length",
+        "filename too long",
+        "file name too long",
+        "name.{0,30}too long.{0,60}(?:ffpfs|ffpfsc|exfat)"
+      ],
+      "summary": "A comunidade reportou que nomes de imagem longos não eram carregados pelo ShadowMount. O limite exato depende da versão e não está documentado no relato.",
+      "steps": [
+        "Usa um nome de teste curto que mantenha o Title ID e a extensão, por exemplo PPSA12345_Test.ffpfsc.",
+        "Se o ficheiro estiver montado ou a ser analisado, pausa o scanner antes de renomear.",
+        "Se o nome curto resolver, inclui nome antigo/novo, extensão e versão no relatório."
+      ],
+      "fix_type": "solucao_relata_com_cuidado",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/137"
+      ],
+      "applicability": "Relato aberto de outubro de 2026; ainda não especifica o limite exato.",
+      "fix_summary": "Renomear para um nome mais curto é um teste reversível; não alterar Title ID interno nem extensão.",
+      "context_conditions": {
+        "origin_type": [
+          "image_pfs"
+        ]
+      }
+    },
+    {
+      "id": "SHADOW_SCAN_MISSING_OR_AUTO_MOUNT",
+      "title": "O scanner do ShadowMountPlus pode não encontrar/montar a origem",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "fails to find.{0,80}mount",
+        "not mounting games automatically",
+        "no games found",
+        "found 0 games",
+        "scan.{0,80}(?:no games|not found|empty)"
+      ],
+      "summary": "Há relatos de jogos que não aparecem no scanner ou que por vezes só aparecem depois de recarregar o payload. Isso pode depender dos caminhos configurados, profundidade de scan, formato ou estado do payload.",
+      "steps": [
+        "Confirma no debug.log os scan_paths, scan_depth e o número de jogos encontrados; verifica se a pasta está incluída.",
+        "Confirma que o formato/extensão é suportado por essa versão e que o nome/path não excede limites conhecidos.",
+        "Tenta recarregar o payload apenas uma vez para forçar nova varredura; se resultar, guarda o log antes/depois."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/136",
+        "https://github.com/drakmor/ShadowMountPlus/issues/142"
+      ],
+      "applicability": "Vários relatos recentes; causa não universal nem confirmada.",
+      "fix_summary": "Ajustar caminhos apenas depois de confirmar a configuração ativa; recarregar payload é workaround relatado, não garantia."
+    },
+    {
+      "id": "SHADOW_FOLDER_GAME_RELAUNCH_CE1057733",
+      "title": "Jogo em pasta não volta a montar após sair (CE-105773-3)",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "ce-105773-3"
+      ],
+      "all_patterns": [
+        "ce-105773-3",
+        "(?:folder game|folder|mounted.{0,30}false|relaunch|launch again|after exit)"
+      ],
+      "summary": "Um relato em FW 13.60 descreve um jogo em formato pasta que funciona no primeiro arranque, mas falha ao relançar após sair. A API reportou mounted=false e uma montagem manual através da interface oficial da API restaurou a capacidade de lançar naquele caso.",
+      "steps": [
+        "Confirma se o título é formato pasta e se o erro só surge no segundo arranque, depois de fechar o jogo.",
+        "Consulta o estado instalado/montado na UI do ShadowMountPlus; não reinstales se a origem ainda está disponível.",
+        "Se a montagem manual existir na tua versão, usa-a na interface do ShadowMountPlus; não executes comandos API desconhecidos.",
+        "Anexa sequência temporal e debug.log ao issue do mantenedor."
+      ],
+      "fix_type": "workaround_comunitario",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/128"
+      ],
+      "applicability": "Relato em FW 13.60, KStuff Lite 1.11 e ShadowMountPlus 1.7beta3; observado num único sistema.",
+      "fix_summary": "Montagem manual voltou a funcionar num caso publicado; o erro pode ter outra causa noutros sistemas.",
+      "context_conditions": {
+        "origin_type": [
+          "folder"
+        ],
+        "trigger": [
+          "after_exit"
+        ]
+      }
+    },
+    {
+      "id": "SHADOW_CACHE_FULL",
+      "title": "Cache de imagens do ShadowMountPlus cheio",
+      "severity": "Erro",
+      "confidence": "Alta para a mensagem; baixa para a causa subjacente",
+      "patterns": [
+        "image cache full",
+        "cache full.{0,100}rolling back mount",
+        "rolling back mount.{0,100}cache",
+        "image cache full \\(\\d+ entries\\)"
+      ],
+      "summary": "O ShadowMountPlus abortou/fez rollback da montagem porque indicou que o cache de imagens estava cheio. Um relato apareceu com uma biblioteca de mais de 100 imagens; não estabelece um limite universal.",
+      "steps": [
+        "Guarda o log e verifica quantas entradas mostra (por exemplo, 64 no relato antigo).",
+        "Confirma que usas uma versão atual e compatível do ShadowMountPlus; não faças downgrade só com base num relato antigo.",
+        "Se o mesmo erro ocorrer, reduz temporariamente as origens varridas através de definições documentadas e testa com uma biblioteca pequena.",
+        "Não apagues manualmente a cache interna nem elimines jogos para libertar entradas; partilha o log se persistir."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/32"
+      ],
+      "applicability": "Relato em FW 10.01, ShadowMountPlus 1.6test11, KStuff 1.6.7: o log mostrou cache de 64 entradas. O issue foi fechado como concluído após o mantenedor ligar um build de teste; o limite/bug pode já ter mudado em versões posteriores.",
+      "fix_summary": "Reduzir fontes/imagens simultaneamente e rever duplicados são testes operacionais seguros; não apagar cache interno manualmente."
+    },
+    {
+      "id": "SHADOW_MOVE_FOLDER_KP",
+      "title": "Kernel panic ao mover jogo entre armazenamento USB e ext1",
+      "severity": "Erro crítico",
+      "confidence": "Média",
+      "patterns": [
+        "kernel panic",
+        "(?:move|moving|moving a game|transfer).{0,100}(?:usb0|ext1)",
+        "(?:usb0|ext1).{0,100}(?:move|moving|transfer)"
+      ],
+      "all_patterns": [
+        "kernel panic",
+        "(?:usb0|ext1)",
+        "(?:move|moving|transfer)"
+      ],
+      "summary": "Foi reportado um kernel panic ao mover uma pasta de jogo de /mnt/usb0 para ext1 com ShadowMountPlus 1.7beta4 e KStuff Lite 1.11 em FW 13.60.",
+      "steps": [
+        "Não repitas a operação de mover com a mesma versão se o cenário corresponder ao relato.",
+        "Confirma que tens uma cópia de segurança e mantém os ficheiros originais intactos.",
+        "Para transferir, usa um método alternativo de cópia que não invoque a rotina de move do ShadowMountPlus; valida tamanhos e hashes antes de apagar a origem.",
+        "Reporta o log e a direção da transferência ao mantenedor."
+      ],
+      "fix_type": "evitar_operacao",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/127"
+      ],
+      "applicability": "Relato aberto com FW 13.60, SM+ 1.7beta4 e KStuff Lite 1.11.",
+      "fix_summary": "Evitar temporariamente a função Move integrada para este cenário é a opção mais segura; a causa continua por confirmar.",
+      "context_conditions": {
+        "trigger": [
+          "transfer"
+        ],
+        "storage": [
+          "transfer_between"
+        ]
+      }
+    },
+    {
+      "id": "KSTUFF_SM_LZ4_BACKPORT_CONFLICT",
+      "title": "Compatibilidade suspeita entre KStuff Lite 1.11, ShadowMountPlus 1.7beta2 e imagens LZ4",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "lz4",
+        "kstuff.{0,40}1\\.11",
+        "shadowmountplus.{0,40}1\\.7beta2"
+      ],
+      "all_patterns": [
+        "lz4",
+        "kstuff.{0,40}1\\.11",
+        "shadowmountplus.{0,40}1\\.7beta2"
+      ],
+      "summary": "Um caso público indicou que imagens LZ4 deixaram de funcionar após a combinação de KStuff Lite 1.11 e ShadowMountPlus 1.7beta2; o mantenedor comentou que se removesse libkernel dos backports. Não é uma recomendação para alterar qualquer backport sem confirmar o caso.",
+      "steps": [
+        "Confirma que as três condições de versão/formato correspondem exatamente ao relato antes de tomar qualquer medida.",
+        "Faz cópia integral do jogo e do seu diretório de backport antes de qualquer edição.",
+        "Compara com as versões recomendadas nos releases/issues atuais dos projetos.",
+        "Não removas libkernel nem alteres backports automaticamente; segue instruções atuais do mantenedor para o jogo exato."
+      ],
+      "fix_type": "nao_automatizar",
+      "evidence_status": "relato_comunitario_encerrado_com_pista_do_mantenedor",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/117"
+      ],
+      "applicability": "Relato em FW 12.02, KStuff Lite 1.11, ShadowMountPlus 1.7beta2 e imagens LZ4.",
+      "fix_summary": "O issue sugere uma interação de backport/libkernel num caso específico; a app não deve modificar backports automaticamente.",
+      "context_conditions": {
+        "origin_type": [
+          "image_lz4"
+        ],
+        "kstuff_version": [
+          "1.11"
+        ],
+        "shadowmount_version": [
+          "1.7beta2"
+        ]
+      }
+    },
+    {
+      "id": "SHADOW_GAME_CANNOT_LAUNCH",
+      "title": "A PS5 não consegue iniciar a aplicação montada",
+      "severity": "Erro",
+      "confidence": "Baixa",
+      "patterns": [
+        "can't launch the game or app",
+        "cannot launch the game or app",
+        "can't start the game or app",
+        "failed to launch (?:the )?(?:game|app)"
+      ],
+      "summary": "A origem pode ter sido montada/registada e ainda assim o sistema não iniciar o título. Relatos deste texto são amplos e não identificam uma causa única.",
+      "steps": [
+        "Procura a primeira falha anterior à mensagem de lançamento no debug.log; distingue montagem, registo e crash no arranque.",
+        "Confirma se acontece com um único título ou vários, e regista o tipo de imagem e as versões do payload.",
+        "Não assumas que reinstalar ou trocar de firmware resolve; preserva a origem e compara com um título que funcione."
+      ],
+      "fix_type": "triagem",
+      "evidence_status": "relato_comunitario_nao_especifico",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/89"
+      ],
+      "applicability": "Relato antigo em FW 9.00; amplo e possivelmente dependente de versão.",
+      "fix_summary": "Não há fix universal; o primeiro erro anterior é necessário para uma hipótese mais precisa."
+    },
+    {
+      "id": "SHADOW_PS4_CE1082629",
+      "title": "Erro intermitente CE-108262-9 ao executar jogos PS4 fpkg",
+      "severity": "Aviso",
+      "confidence": "Baixa a média",
+      "patterns": [
+        "ce-108262-9"
+      ],
+      "all_patterns": [
+        "ce-108262-9",
+        "(?:ps4|fpkg|shadowmount|kstuff)"
+      ],
+      "summary": "Foi reportado um erro intermitente CE-108262-9 em jogos PS4 fpkg no SSD interno com uma combinação de payloads; o autor não estabeleceu a causa. É diferente de um diagnóstico confirmado de imagem corrompida.",
+      "steps": [
+        "Regista se ocorre apenas em jogos PS4 fpkg ou também em jogos PS5 e em que fase.",
+        "Guarda log, versões de todos os payloads e firmware; compara a mesma operação após reinício completo.",
+        "Não concluas que KStuff ou ShadowMountPlus é culpado sem teste controlado de uma variável de cada vez."
+      ],
+      "fix_type": "report_only",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/143"
+      ],
+      "applicability": "Relato em FW 13.60 e ShadowMountPlus 1.7beta3; erro intermitente, causa desconhecida.",
+      "fix_summary": "Sem correção confirmada no issue consultado; recolher contexto e comparar versões."
+    },
+    {
+      "id": "KSTUFF_SM_UPDATE_CRASHES",
+      "title": "Crashes ou kernel panics após atualizar KStuff Lite/ShadowMountPlus",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "kernel panic",
+        "kstuff",
+        "shadowmount"
+      ],
+      "all_patterns": [
+        "kernel panic",
+        "kstuff",
+        "shadowmount",
+        "(?:after update|updated|1\\.11|1\\.7beta|1\\.7 alpha|new version)"
+      ],
+      "summary": "Existem relatos de maior instabilidade após atualizar simultaneamente KStuff Lite e ShadowMountPlus, incluindo falhas ao entrar em repouso, encerrar jogos ou iniciar certos formatos. Os próprios relatos não isolam sempre a causa.",
+      "steps": [
+        "Regista as versões exatas antes/depois da atualização e confirma que a PS5 foi reiniciada completamente depois de atualizar os payloads.",
+        "Evita atualizar vários payloads ao mesmo tempo; usa releases estáveis/compatíveis documentadas pelos mantenedores.",
+        "Se o problema começou imediatamente após atualizar, compara versões segundo a documentação do projeto e mantém cópia de segurança da configuração.",
+        "Não faças downgrade de payloads aleatórios ou incompatíveis com o firmware; segue uma versão explicitamente indicada pelo mantenedor."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relatos_comunitarios_mistos",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/115",
+        "https://github.com/drakmor/ShadowMountPlus/issues/76",
+        "https://github.com/drakmor/kstuff-lite"
+      ],
+      "applicability": "Relatos de várias versões/firmwares; correspondência genérica e insuficiente para culpar um componente.",
+      "fix_summary": "Reinício completo após atualização e teste de uma variável de cada vez são passos prudentes; não constituem diagnóstico definitivo.",
+      "context_conditions": {
+        "trigger": [
+          "after_update"
+        ]
+      }
+    },
+    {
+      "id": "SHADOW_SIGSEGV_IN_GAME",
+      "title": "O processo do jogo caiu com SIGSEGV/page fault",
+      "severity": "Erro",
+      "confidence": "Alta para o crash; baixa para a causa",
+      "patterns": [
+        "signal:\\s*11\\s*\\(sigsegv\\)",
+        "sigsegv",
+        "page fault \\(user read data",
+        "fault address:\\s*0x"
+      ],
+      "summary": "O processo do jogo terminou por uma falha de memória. Há relatos em que montagem e registo tiveram sucesso e o jogo só caiu durante uma cutscene ou após aplicar backport; isso não prova que ShadowMountPlus ou KStuff seja a causa.",
+      "steps": [
+        "Identifica Title ID, momento do crash, backport aplicado, firmware e versões dos payloads.",
+        "Procura thread name, fault address, RIP e backtrace; guarda kernel capture/core quando disponível.",
+        "Compara com a mesma imagem/formato noutro método apenas se já o tiveres e for seguro; não alteres módulos/backports com base apenas em SIGSEGV.",
+        "Se ocorre imediatamente após “Backport applied”, trata a compatibilidade do jogo/backport como hipótese, não como facto."
+      ],
+      "fix_type": "triagem",
+      "evidence_status": "relatos_comunitarios",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/150",
+        "https://github.com/drakmor/ShadowMountPlus/issues/135"
+      ],
+      "applicability": "Casos públicos de títulos e firmwares específicos; um SIGSEGV isolado é uma assinatura genérica.",
+      "fix_summary": "Não há fix universal: são necessários o log de crash e contexto do jogo para distinguir falha do jogo, backport ou ambiente."
+    },
+    {
+      "id": "SHADOW_BACKPORT_RUNTIME_CASE",
+      "title": "Crash imediato após aplicar backport (SIGBUS/int 0x42)",
+      "severity": "Erro",
+      "confidence": "Baixa a média",
+      "patterns": [
+        "int\\s+0x42",
+        "sigbus"
+      ],
+      "all_patterns": [
+        "(?:int\\s+0x42|sigbus)",
+        "(?:backport applied|crashed before kstuff|mdbg|fakelib)"
+      ],
+      "summary": "Um issue público descreve crash imediato após aplicar backport, com SIGBUS/INT 0x42, mesmo após testar algumas configurações de fakelib. Um comentário de utilizador sugere verificar a caixa/capitalização da pasta Runtime, mas não é uma correção validada pelo mantenedor.",
+      "steps": [
+        "Confirma se as linhas incluem SIGBUS/int 0x42 e se o crash ocorre imediatamente depois de o backport ser aplicado.",
+        "Confirma que a estrutura do jogo e os nomes de pastas estão exatamente como a documentação dessa versão espera, sem renomear automaticamente.",
+        "Faz backup completo antes de qualquer alteração. Não executes chmod recursivo em todo /data/homebrew e não alteres a fakelib global como primeiro teste.",
+        "Anexa debug.log e kernel capture ao issue específico para confirmação."
+      ],
+      "fix_type": "nao_automatizar",
+      "evidence_status": "relato_comunitario_com_workaround_nao_confirmado",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/135"
+      ],
+      "applicability": "Relato de jogo específico em FW 13.60 com ShadowMountPlus 1.7beta3/beta4 e KStuff Lite 1.11; a sugestão Runtime/runtime surgiu num comentário de utilizador.",
+      "fix_summary": "A sugestão de nomes Runtime/runtime não foi confirmada oficialmente; apenas verificar estrutura e pedir validação. Sem alterações automáticas."
+    },
+    {
+      "id": "KSTUFF_LOAD_KERNEL_PANIC",
+      "title": "Kernel panic/crash associado ao carregamento do KStuff Lite",
+      "severity": "Erro crítico",
+      "confidence": "Baixa a média",
+      "patterns": [
+        "kstuff(?:\\s|-)?lite.{0,80}(?:kernel panic|panic|crash|reboot|crashed)",
+        "(?:kernel panic|panic|crash|reboot|crashed).{0,80}kstuff(?:\\s|-)?lite"
+      ],
+      "all_patterns": [
+        "kstuff(?:\\s|-)?lite",
+        "(?:kernel panic|panic|crash|reboot|crashed)"
+      ],
+      "summary": "A comunidade reportou crashes/reboots após carregar KStuff Lite em algumas combinações de firmware, exploit/loader e payloads. Estes relatos não isolam sempre a causa; pode ser conflito de versão, ordem de carregamento ou outro estado da consola.",
+      "steps": [
+        "Confirma o firmware e a versão exata do KStuff Lite; guarda a mensagem de debug e o momento do crash.",
+        "Depois de atualizar payloads, faz um reinício completo antes de voltar a testá-los.",
+        "Testa apenas o conjunto mínimo necessário e muda uma variável de cada vez; não carregues repetidamente o payload após crash.",
+        "Se o problema começou depois de instalar patches não oficiais em jogos PS4, regista esse facto como possível variável de diagnóstico; não apagues jogos nem reconstruas a base de dados automaticamente."
+      ],
+      "fix_type": "triagem_segura",
+      "evidence_status": "relatos_comunitarios_nao_conclusivos",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/115",
+        "https://github.com/drakmor/ShadowMountPlus/issues/76",
+        "https://github.com/itsPLK/ps5-y2jb-autoloader/discussions/14"
+      ],
+      "applicability": "Relatos com versões e firmwares diferentes; o crash pode surgir antes ou depois de ShadowMountPlus e não prova que KStuff Lite seja a causa.",
+      "fix_summary": "Reinício completo após atualização e teste controlado de versões/payloads são passos de diagnóstico. Não existe um fix universal confirmado."
+    },
+    {
+      "id": "SHADOW_BACKPORT_NOT_APPLYING",
+      "title": "Backport não parece estar a ser aplicado / o jogo não inicia",
+      "severity": "Aviso",
+      "confidence": "Baixa a média",
+      "patterns": [
+        "backports? (?:are )?(?:not|never) (?:being )?appl(?:y|ied|ying)",
+        "backport.{0,80}(?:not applied|not working|does not work|fails? to launch)",
+        "games? fail to launch.{0,80}backport"
+      ],
+      "summary": "Há relatos de títulos em formato pasta que falharam em firmwares antigos mesmo com uma pasta “backports” ao lado da origem. Um issue antigo usava versões iniciais de ShadowMountPlus e KStuff Lite, pelo que a relevância depende da versão atual e da disposição exata das pastas.",
+      "steps": [
+        "Confirma que o backport corresponde ao Title ID e à versão exata do jogo, e não apenas a um título com nome semelhante.",
+        "Verifica no debug.log se a ferramenta reporta explicitamente a aplicação do backport; uma notificação isolada não comprova que o jogo esteja compatível.",
+        "Confirma a estrutura de pastas e as opções documentadas para a versão instalada. Faz cópia de segurança antes de qualquer alteração.",
+        "Não copies bibliotecas de outro jogo nem edites o executável para tentar corrigir a falha."
+      ],
+      "fix_type": "guia",
+      "evidence_status": "relato_comunitario_antigo",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/22"
+      ],
+      "applicability": "Relato antigo: FW 4.03, ShadowMountPlus 1.6beta9, KStuff Lite 1.03, jogo em formato pasta; não garante comportamento na versão 1.7.",
+      "fix_summary": "Não existe solução universal confirmada; validar correspondência do backport e logs primeiro.",
+      "context_conditions": {
+        "trigger": [
+          "launch"
+        ]
+      }
+    },
+    {
+      "id": "SHADOW_TROPHY_REG_80551618",
+      "title": "Registo de troféus falhou em jogo PS4 `.ffpfsc` (0x80551618)",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "0x80551618"
+      ],
+      "summary": "Foi reportado um erro de registo de troféus em jogos PS4 montados a partir de .ffpfsc, apesar de estes montarem e serem jogáveis. O autor descreve diferença entre o fluxo de montagem genérico e o fluxo normal de instalação/arranque PS4; o issue permanece sem uma correção geral confirmada.",
+      "steps": [
+        "Confirma que o erro ocorre em jogo PS4 e origem .ffpfsc, e não num jogo PS5 ou noutro formato.",
+        "Guarda debug.log e indica como o .ffpfsc foi criado, versão do ShadowMountPlus e firmware.",
+        "Não recries toda a biblioteca nem alteres ficheiros de troféus: o erro reportado pode estar no registo do sistema e não na imagem.",
+        "Consulta o issue do mantenedor antes de alterar método/formato."
+      ],
+      "fix_type": "report_only",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/97"
+      ],
+      "applicability": "Relato de julho de 2026 em jogos PS4 .ffpfsc convertidos a partir de PKG; não generalizar a outros formatos.",
+      "fix_summary": "Não há correção universal confirmada no issue consultado; preservar a imagem e recolher versões/logs."
+    },
+    {
+      "id": "SHADOW_SCAN_INSTALLED_FPKG_AFTER_RESET",
+      "title": "ShadowMountPlus não reconhece alguns FPKG já instalados depois de reiniciar/resetar a consola",
+      "severity": "Aviso",
+      "confidence": "Baixa a média",
+      "patterns": [
+        "app\\.db",
+        "app\\.pkg",
+        "unrecognized installs",
+        "unable to scan installed fpkg"
+      ],
+      "all_patterns": [
+        "(?:app\\.db|app\\.pkg|installed fpkg|unrecognized installs)",
+        "(?:not|unable|fail|unrecognized|recogniz)"
+      ],
+      "summary": "Foram relatados problemas em que o ShadowMountPlus deixa de reconhecer alguns FPKG instalados após um reset/reinício, aparentemente envolvendo a indexação/app.db. Um follow-up afirma que o caso inicial não ficou corrigido na beta5fix1, pelo que o estado e a solução podem variar por versão.",
+      "steps": [
+        "Confirma se o título estava acessível antes do reset e se o problema afeta apenas FPKG instalados ou também jogos montados a partir de pastas/imagens.",
+        "Guarda debug.log, versão do ShadowMountPlus e o momento do reset; procura linhas [DB], [SCAN], app.db e app.pkg.",
+        "Não reconstruas a base de dados de novo nem edites app.db manualmente como primeiro passo: o relato original já tinha tentado operações de modo de segurança sem solução confirmada.",
+        "Consulta o estado dos issues #140/#149 para a tua versão e reporta os IDs dos títulos não reconhecidos."
+      ],
+      "fix_type": "report_only",
+      "evidence_status": "relatos_comunitarios_abertos_e_contraditorios",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/140",
+        "https://github.com/drakmor/ShadowMountPlus/issues/149"
+      ],
+      "applicability": "Relatos com ShadowMountPlus beta4/beta5fix1 e FW 10.01; o problema foi fechado e depois reaberto num follow-up de utilizador.",
+      "fix_summary": "Não existe um fix confirmado universalmente nas fontes consultadas; não editar nem apagar a base de dados manualmente."
+    },
+    {
+      "id": "SHADOW_PREINST_FONT_ACCESS",
+      "title": "Jogo montado não consegue aceder a `/preinst/common/font`",
+      "severity": "Aviso",
+      "confidence": "Baixa a média",
+      "patterns": [
+        "/preinst/common/font"
+      ],
+      "all_patterns": [
+        "/preinst/common/font",
+        "(?:cannot|can't|unable|failed|error|not found|no such file|denied|unavailable)"
+      ],
+      "summary": "Existe um issue aberto sobre jogos montados que não conseguem aceder a /preinst/common/font em ShadowMountPlus 1.7beta4. A linha de caminho isolada não significa que exista problema; é necessário um erro de acesso no mesmo log.",
+      "steps": [
+        "Confirma que a linha indica falha de acesso e não apenas uma montagem com sucesso desse caminho.",
+        "Regista firmware, versão do ShadowMountPlus e se o título usa formato pasta ou imagem.",
+        "Não copies a pasta de fontes do sistema para o jogo nem alteres permissões globais.",
+        "Se persistir, anexa o excerto e o debug.log ao issue do mantenedor."
+      ],
+      "fix_type": "report_only",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/132"
+      ],
+      "applicability": "Relato aberto de outubro de 2026 para ShadowMountPlus 1.7beta4; não é causa universal.",
+      "fix_summary": "Não há solução geral confirmada; confirmar que o log mostra uma falha real de acesso antes de agir."
+    }
+  ]
+}
