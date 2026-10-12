@@ -1,22 +1,20 @@
-## v0.7.3 — Correção robusta do caminho da base de conhecimento
-- Adicionado um ficheiro `PS5HomebrewDoctor.spec` na raiz do projeto. O spec procura `app.py` e `knowledge_base.json` na sua própria pasta ou na pasta imediatamente acima, por isso não depende de `build\knowledge_base.json`.
-- O workflow limpa saídas antigas, valida os ficheiros de origem e compila explicitamente a partir do spec corrigido.
-- O artifact continua a ser um único `PS5HomebrewDoctor.exe`; os utilizadores finais não precisam de Python, PyInstaller ou ficheiros BAT.
-- A documentação agora pede substituir o workflow e o spec antigos, e confirma que `knowledge_base.json` tem de permanecer na raiz do repositório.
-
 # Histórico de versões
 
+## v0.7.4 — Compilação cloud com diagnóstico melhorado
+- O workflow compila diretamente `app.py` com as opções one-file do PyInstaller, sem usar o `PS5HomebrewDoctor.spec` existente no repositório.
+- O spec temporário é criado fora do checkout para evitar conflito com specs antigos e caminhos de recursos desatualizados.
+- São validados os ficheiros de origem e a base JSON antes da compilação.
+- Se o EXE não aparecer no caminho esperado, o workflow lista o conteúdo de `dist`, procura saídas alternativas e apresenta ficheiros de build úteis para depuração.
+- O artifact continua a ser um único `PS5HomebrewDoctor.exe`.
+
+## v0.7.3 — Correção robusta do caminho da base de conhecimento
+- Adicionado um spec na raiz e validação de caminhos.
+
 ## v0.7.2 — Correção da compilação na cloud
-- Corrigido o caminho de `knowledge_base.json` passado ao PyInstaller: agora é resolvido como caminho absoluto a partir da raiz do repositório, em vez de ser interpretado relativamente à pasta `build`.
-- O workflow verifica explicitamente se o ficheiro da base de conhecimento existe antes de iniciar a compilação.
-- Mantida a saída como um único `PS5HomebrewDoctor.exe`, sem Python ou BAT necessários no computador de destino.
+- Ajuste ao caminho da base de conhecimento passado ao PyInstaller.
 
 ## v0.7.1 — Edição One File
-- Simplificado o pacote para conter apenas um BAT de compilação, código necessário, base de conhecimento e documentação essencial.
-- O script cria `PS5HomebrewDoctor.exe` diretamente na pasta do projeto, sem criar pastas `build` e `dist` dentro dela.
-- O executável incorpora a base de conhecimento e utiliza o modo `onefile` e `windowed` do PyInstaller.
-- Atualizada a versão exibida e nos relatórios para 0.7.1.
+- O executável incorpora os componentes da aplicação.
 
 ## v0.7.0
-- Seletor de idioma PT/EN e preferências de idioma guardadas.
-- Ferramenta de compilação one-file inicial.
+- Seletor de idioma PT/EN e preferências guardadas.

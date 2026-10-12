@@ -1,50 +1,42 @@
-# PS5 Homebrew Doctor v0.7.3 — criar EXE sem Python instalado no teu PC
+# PS5 Homebrew Doctor v0.7.4 — gerar um EXE autónomo no GitHub Actions
 
-Este pacote usa o GitHub Actions para compilar a aplicação num computador Windows temporário na cloud. **Não precisas de instalar Python nem PyInstaller no teu computador.** O resultado para uso diário é um único ficheiro `PS5HomebrewDoctor.exe`.
+O objetivo é obter um único `PS5HomebrewDoctor.exe`. O PC onde vais usar a aplicação não precisa de Python nem de ficheiros BAT. A compilação ocorre num runner Windows temporário do GitHub Actions.
 
-## Importante se a compilação anterior falhou
+## O que esta versão corrige
 
-Esta versão corrige o erro `Unable to find ... build\knowledge_base.json`. No teu repositório GitHub, substitui os ficheiros antigos pelos desta versão, em especial:
+O erro `O executável não foi criado` é a verificação final a dizer que o `.exe` não apareceu no caminho esperado; por si só, não mostra a causa original. Esta versão compila diretamente `app.py`, cria o spec temporário fora do repositório, valida os ficheiros antes da compilação e imprime mais informação caso não encontre a saída.
 
-- `PS5HomebrewDoctor.spec` (tem de ficar na raiz do repositório);
-- `.github/workflows/build-windows-exe.yml`;
-- `knowledge_base.json` (tem de ficar ao lado de `app.py`, não dentro da pasta `build`).
+**Importante:** como a mensagem do erro anterior está em português e o workflow v0.7.3 distribuído usava outra mensagem, confirma que o GitHub executa o workflow atualizado e não uma cópia antiga ou um segundo workflow.
 
-Se existir uma pasta `build` antiga no repositório, o workflow remove-a durante a compilação. O build usa o spec novo na raiz.
+## Preparar o repositório
 
-## O que vais precisar
+1. Descarrega e extrai este ZIP localmente.
+2. No repositório GitHub do projeto, substitui os ficheiros fonte pelos desta versão.
+3. Substitui especificamente `.github/workflows/build-windows-exe.yml` pelo ficheiro desta versão.
+4. Abre `.github/workflows/` no GitHub e confirma que não há outro workflow antigo a tentar criar o mesmo EXE. Remove os workflows duplicados/antigos que executem a compilação anterior. O ficheiro `PS5HomebrewDoctor.spec` antigo pode ser removido; o workflow novo não o utiliza.
+5. Confirma que `app.py`, `doctor_core.py`, `app_paths.py`, `i18n.py`, `safe_actions.py`, `session_utils.py` e `knowledge_base.json` estão na raiz do repositório.
+6. Faz commit das alterações.
 
-- Uma conta GitHub (gratuita).
-- Ligação à Internet para enviar o código e descarregar o EXE.
-- Não precisas de ter Python instalado localmente.
+## Compilar e descarregar
 
-## Passos
+1. Abre o separador **Actions** no GitHub.
+2. Seleciona **Build PS5 Homebrew Doctor EXE** e abre a execução mais recente, iniciada pelo teu último commit. Não uses uma execução antiga.
+3. Espera pelo visto verde.
+4. Na secção **Artifacts**, descarrega `PS5HomebrewDoctor-Windows-x64`.
+5. Extrai o ZIP do artifact. O resultado é `PS5HomebrewDoctor.exe`; copia-o para uma pasta e abre com duplo clique.
 
-1. Extrai o ZIP para uma pasta. Deves ver `app.py`, `doctor_core.py`, `knowledge_base.json` e a pasta `.github`.
-2. Abre <https://github.com/new> e cria um repositório, por exemplo `PS5-Homebrew-Doctor`. Podes escolher **Private** para manter o código privado.
-3. Dentro da pasta do repositório no GitHub, escolhe **Add file → Upload files**. Arrasta para a página o conteúdo extraído desta pasta, incluindo a pasta `.github` (que contém `workflows/build-windows-exe.yml`). Não carregues o ZIP em si; carrega os ficheiros extraídos.
-4. Confirma que `app.py`, `knowledge_base.json` e `.github/workflows/build-windows-exe.yml` aparecem no carregamento. Clica em **Commit changes**.
-5. Abre o separador **Actions** no repositório. A execução **Build PS5 Homebrew Doctor EXE** deverá iniciar automaticamente após o commit. Abre a execução e espera que termine com um visto verde.
-6. Na página dessa execução, procura a secção **Artifacts** e descarrega `PS5HomebrewDoctor-Windows-x64`.
-7. Extrai o ZIP do artifact. Lá dentro estará `PS5HomebrewDoctor.exe`.
-8. Copia esse EXE para uma pasta normal no Windows e abre-o com duplo clique. Para uso diário, não precisas dos ficheiros-fonte, de Python nem de ficheiros `.bat`.
+## Se voltar a falhar
 
-A documentação oficial do GitHub confirma que os ficheiros podem ser enviados por **Add file → Upload files** e que os artifacts de uma execução se descarregam a partir de **Actions → execução → Artifacts**.
+Abre a execução que ficou a vermelho e copia o log completo do passo **Build one-file EXE directly from app.py**, incluindo as linhas anteriores à mensagem de erro. A versão 0.7.4 imprime o comando, versão do PyInstaller, conteúdo da pasta `dist` e ficheiros recentes de build. Esses dados são necessários para distinguir uma falha real do compilador de uma saída colocada noutra pasta.
 
-## Se o workflow não iniciar
+## Privacidade e segurança
 
-- Confirma que o ficheiro `.github/workflows/build-windows-exe.yml` foi enviado e está no caminho exato indicado.
-- Abre **Actions** e confirma se a execução está à espera de aprovação ou se está desativada.
-- Se não aparecer uma execução, abre **Actions → Build PS5 Homebrew Doctor EXE → Run workflow** (quando essa opção estiver disponível).
-- Se a compilação falhar, abre a execução e envia-me o texto do passo que ficou a vermelho. A versão 0.7.3 usa um `PS5HomebrewDoctor.spec` corrigido, que resolve a base de conhecimento a partir da raiz do projeto ou da pasta imediatamente acima. O workflow elimina saídas de compilação antigas e usa explicitamente este spec; assim, não procura `build\knowledge_base.json`.
+- A app analisa logs localmente; o workflow compila o código fonte do repositório e publica o executável como artifact.
+- O EXE não é assinado por um certificado comercial; o SmartScreen pode mostrar um aviso.
+- Mantém a API de leitura do ShadowMountPlus apenas numa rede local de confiança. Não a exponhas à Internet.
 
-## Notas de segurança e privacidade
+## Fontes
 
-- O workflow compila o código incluído neste pacote e publica apenas o EXE como artifact; não publica secrets.
-- Se o repositório for privado, só utilizadores com acesso ao repositório poderão ver e descarregar o artifact.
-- O executável não vem assinado com um certificado de editor, por isso o Windows SmartScreen pode mostrar um aviso. Isso não é por si só prova de malware; confirma que o EXE foi descarregado da tua própria execução de compilação.
-- A ligação à PS5 usa a API de leitura do ShadowMountPlus. Mantém essa API apenas na rede local de confiança; não a exponhas à Internet.
-
-## O que é incorporado
-
-O build usa `PS5HomebrewDoctor.spec` com PyInstaller em modo one-file e windowed, e inclui `knowledge_base.json` usando um caminho absoluto. O Python e as bibliotecas necessárias ficam dentro do EXE; o Python é usado apenas pelo computador de compilação temporário do GitHub Actions.
+- Documentação do PyInstaller sobre opções de compilação: https://pyinstaller.org/en/stable/usage.html
+- Documentação do PyInstaller sobre ficheiros spec: https://pyinstaller.org/en/stable/spec-files.html
+- Documentação do GitHub Actions sobre artifacts: https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts
