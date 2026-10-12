@@ -1,8 +1,7 @@
 Project: PS5 Homebrew Doctor
-Version: 0.7.4
+Version: 0.7.5
 Build route: GitHub Actions / Windows runner / PyInstaller CLI one-file
 Expected output: dist/PS5HomebrewDoctor.exe
-No Python installation is required on the end-user PC.
-Changes: workflow builds directly from app.py and generates its temporary spec outside the repository, avoiding stale spec paths.
-Diagnostics: if the executable is not found, the workflow prints dist contents and recent build files before failing.
-Note: the Windows EXE is created by GitHub Actions; this package contains source and the workflow.
+Distribution: Actions artifact for CI runs; Windows executable and SHA-256 attached to GitHub Releases
+End-user requirements: no Python installation and no BAT files
+Stale spec avoidance: generated spec is stored outside the repository
