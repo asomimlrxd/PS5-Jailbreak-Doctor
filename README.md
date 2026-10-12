@@ -1,12 +1,10 @@
-<div align="center">
-  <img src="docs/images/banner.svg" alt="PS5 Jailbreak Doctor" width="100%">
+![PS5 Jailbreak Doctor](./docs/images/banner.png)
 
-  **A Windows desktop diagnostic tool for the PS5 homebrew community.**
+**A Windows desktop diagnostic tool for the PS5 homebrew community.**
 
-  Read logs, identify known error patterns, review evidence, and decide what to check next.
+Read logs, identify known error patterns, review evidence, and decide what to check next.
 
-  [English](README_EN.md) · [Português (Portugal)](README_PT.md)
-</div>
+[English](README_EN.md) · [Português (Portugal)](README_PT.md)
 
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2F11-425f50">
@@ -14,6 +12,8 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-425f50">
   <img alt="Analysis" src="https://img.shields.io/badge/analysis-local-425f50">
 </p>
+
+> **If an image appears broken on GitHub:** make sure the whole `docs/images/` folder (including the `.png` files) is committed and pushed to the same branch as this README. Files present only on your PC will not be shown on the GitHub page.
 
 ## What is it?
 
@@ -27,7 +27,7 @@ It is a **diagnostic assistant, not a jailbreak or exploit**. It does not instal
 |---|---|---|
 | Import `.log`, `.txt`, or `.json` files, or read supported logs from ShadowMountPlus | Match log patterns against a local knowledge base | Review the evidence, estimated confidence, known limitations, and suggested checks |
 
-![Diagnostic results using sample data](docs/images/diagnostic-results.png)
+![Diagnostic results using sample data](./docs/images/diagnostic-results.png)
 
 *Example of the results view. This capture illustrates the interface with sample data; it is not a claim that these errors are present on every console.*
 
@@ -45,11 +45,11 @@ It is a **diagnostic assistant, not a jailbreak or exploit**. It does not instal
 
 ## How it works
 
-![PS5 Jailbreak Doctor data flow](docs/images/data-flow.svg)
+![PS5 Jailbreak Doctor data flow](./docs/images/data-flow.png)
 
 The app can analyze imported logs without any network connection. To fetch logs automatically, the PS5 and PC must be on the same trusted local network and the ShadowMountPlus API must be configured to accept the connection. API requests are made only when you press a connection or log-fetch button.
 
-![ShadowMountPlus connection panel](docs/images/connection-panel.png)
+![ShadowMountPlus connection panel](./docs/images/connection-panel.png)
 
 *Connection panel example. The console IP shown in the original capture has been replaced with a placeholder.*
 

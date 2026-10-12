@@ -6,7 +6,7 @@
 
 [README principal do GitHub](README.md) · [English](README_EN.md)
 
-![Resultados de diagnóstico com dados de exemplo](docs/images/diagnostic-results.png)
+![Resultados de diagnóstico com dados de exemplo](./docs/images/diagnostic-results.png)
 
 *Captura ilustrativa da vista de resultados com dados de exemplo — não significa que estes erros estejam presentes em todas as consolas.*
 
@@ -24,11 +24,11 @@
 
 ## Como funciona
 
-![Fluxo de diagnóstico](docs/images/data-flow.svg)
+![Fluxo de diagnóstico](./docs/images/data-flow.png)
 
 A análise de logs importados funciona localmente e não exige ligação à consola. Para obter logs automaticamente, o PC e a PS5 têm de estar na mesma rede local de confiança e a API do ShadowMountPlus tem de aceitar ligações pela rede.
 
-![Painel de ligação ao ShadowMountPlus](docs/images/connection-panel.png)
+![Painel de ligação ao ShadowMountPlus](./docs/images/connection-panel.png)
 
 *A captura original foi editada para substituir o endereço IP privado por um marcador.*
 

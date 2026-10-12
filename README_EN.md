@@ -6,7 +6,7 @@
 
 [GitHub project overview](README.md) · [Português (Portugal)](README_PT.md)
 
-![Diagnostic results using sample data](docs/images/diagnostic-results.png)
+![Diagnostic results using sample data](./docs/images/diagnostic-results.png)
 
 *Illustrative results view using sample data. This does not mean that the shown errors are present on every console.*
 
@@ -24,11 +24,11 @@
 
 ## How it works
 
-![Diagnostic workflow](docs/images/data-flow.svg)
+![Diagnostic workflow](./docs/images/data-flow.png)
 
 Analyzing imported logs works locally and does not require a console connection. To fetch logs automatically, the PC and PS5 must be on the same trusted local network and the ShadowMountPlus API must accept LAN connections.
 
-![ShadowMountPlus connection panel](docs/images/connection-panel.png)
+![ShadowMountPlus connection panel](./docs/images/connection-panel.png)
 
 *The original capture was edited to replace the private LAN IP address with a placeholder.*
 
