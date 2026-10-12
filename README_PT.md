@@ -1,6 +1,16 @@
-# PS5 Homebrew Doctor v0.7.2 — criar EXE sem Python instalado no teu PC
+# PS5 Homebrew Doctor v0.7.3 — criar EXE sem Python instalado no teu PC
 
 Este pacote usa o GitHub Actions para compilar a aplicação num computador Windows temporário na cloud. **Não precisas de instalar Python nem PyInstaller no teu computador.** O resultado para uso diário é um único ficheiro `PS5HomebrewDoctor.exe`.
+
+## Importante se a compilação anterior falhou
+
+Esta versão corrige o erro `Unable to find ... build\knowledge_base.json`. No teu repositório GitHub, substitui os ficheiros antigos pelos desta versão, em especial:
+
+- `PS5HomebrewDoctor.spec` (tem de ficar na raiz do repositório);
+- `.github/workflows/build-windows-exe.yml`;
+- `knowledge_base.json` (tem de ficar ao lado de `app.py`, não dentro da pasta `build`).
+
+Se existir uma pasta `build` antiga no repositório, o workflow remove-a durante a compilação. O build usa o spec novo na raiz.
 
 ## O que vais precisar
 
@@ -26,7 +36,7 @@ A documentação oficial do GitHub confirma que os ficheiros podem ser enviados 
 - Confirma que o ficheiro `.github/workflows/build-windows-exe.yml` foi enviado e está no caminho exato indicado.
 - Abre **Actions** e confirma se a execução está à espera de aprovação ou se está desativada.
 - Se não aparecer uma execução, abre **Actions → Build PS5 Homebrew Doctor EXE → Run workflow** (quando essa opção estiver disponível).
-- Se a compilação falhar, abre a execução e envia-me o texto do passo que ficou a vermelho. A versão 0.7.2 usa o caminho absoluto de `knowledge_base.json`, evitando o erro em que o PyInstaller procurava o ficheiro dentro de `build`.
+- Se a compilação falhar, abre a execução e envia-me o texto do passo que ficou a vermelho. A versão 0.7.3 usa um `PS5HomebrewDoctor.spec` corrigido, que resolve a base de conhecimento a partir da raiz do projeto ou da pasta imediatamente acima. O workflow elimina saídas de compilação antigas e usa explicitamente este spec; assim, não procura `build\knowledge_base.json`.
 
 ## Notas de segurança e privacidade
 
@@ -37,4 +47,4 @@ A documentação oficial do GitHub confirma que os ficheiros podem ser enviados 
 
 ## O que é incorporado
 
-O build usa PyInstaller em modo `--onefile --windowed` e inclui `knowledge_base.json`. O Python e as bibliotecas necessárias ficam dentro do EXE; o Python é usado apenas pelo computador de compilação temporário do GitHub Actions.
+O build usa `PS5HomebrewDoctor.spec` com PyInstaller em modo one-file e windowed, e inclui `knowledge_base.json` usando um caminho absoluto. O Python e as bibliotecas necessárias ficam dentro do EXE; o Python é usado apenas pelo computador de compilação temporário do GitHub Actions.

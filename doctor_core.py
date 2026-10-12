@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Iterable
 
-APP_VERSION = "0.7.2"
+APP_VERSION = "0.7.3"
 
 from pathlib import Path
 import json

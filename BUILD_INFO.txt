@@ -1,7 +1,8 @@
 Project: PS5 Homebrew Doctor
-Version: 0.7.2
-Build route: GitHub Actions / Windows runner / PyInstaller --onefile --windowed
+Version: 0.7.3
+Build route: GitHub Actions / Windows runner / PyInstaller spec (one-file, windowed)
 Expected output: PS5HomebrewDoctor.exe
 No Python installation is required on the end user PC.
-Fix: knowledge_base.json is passed to PyInstaller by absolute repository-root path.
-Note: this package contains the source and workflow. The Windows EXE is created after the workflow runs on GitHub Actions.
+Fix: root-level spec searches for app.py and knowledge_base.json in its own folder or the parent folder; data path is absolute before PyInstaller packages it.
+The workflow removes stale build/dist output before compiling and invokes the corrected root spec directly.
+Note: this package contains source and workflow. The Windows EXE is created by GitHub Actions after the workflow runs.
