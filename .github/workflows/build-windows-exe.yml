@@ -1,0 +1,133 @@
+name: Build and publish PS5 Homebrew Doctor
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    name: Build single-file Windows executable
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Python for build only
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate source files and knowledge database
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $root = (Resolve-Path ".").Path
+          $required = @("app.py", "app_paths.py", "doctor_core.py", "i18n.py", "safe_actions.py", "session_utils.py", "knowledge_base.json")
+          foreach ($name in $required) {
+            $file = Join-Path $root $name
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
+              throw "Missing required project file: $file"
+            }
+          }
+          python -m compileall -q app.py app_paths.py doctor_core.py i18n.py safe_actions.py session_utils.py
+          if ($LASTEXITCODE -ne 0) { throw "Python source validation failed." }
+          python -c "import json; from pathlib import Path; d=json.loads(Path('knowledge_base.json').read_text(encoding='utf-8')); assert d.get('schema_version') == 1 and isinstance(d.get('rules'), list) and d['rules']; print('Knowledge database OK - rules:', len(d['rules']))"
+          if ($LASTEXITCODE -ne 0) { throw "knowledge_base.json is invalid." }
+
+      - name: Install PyInstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          python -m pip install --upgrade pip pyinstaller
+          if ($LASTEXITCODE -ne 0) { throw "Could not install PyInstaller." }
+          python -m PyInstaller --version
+
+      - name: Clean previous build outputs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          foreach ($name in @("build", "dist")) {
+            $path = Join-Path (Get-Location).Path $name
+            if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Recurse -Force }
+          }
+          New-Item -ItemType Directory -Path "dist" | Out-Null
+          New-Item -ItemType Directory -Path "build" | Out-Null
+
+      - name: Build one-file EXE without the repository spec file
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $root = (Resolve-Path ".").Path
+          $dist = Join-Path $root "dist"
+          $work = Join-Path $root "build"
+          $specTemp = Join-Path $env:RUNNER_TEMP "PS5HomebrewDoctor-spec"
+          if (Test-Path -LiteralPath $specTemp) { Remove-Item -LiteralPath $specTemp -Recurse -Force }
+          New-Item -ItemType Directory -Path $specTemp | Out-Null
+          $app = Join-Path $root "app.py"
+          $db = Join-Path $root "knowledge_base.json"
+          Write-Host "Python:"; python --version
+          Write-Host "PyInstaller:"; python -m PyInstaller --version
+          Write-Host "Source: $app"
+          Write-Host "Bundled knowledge database: $db"
+          Write-Host "Output directory: $dist"
+          # The generated spec is kept outside the repository so stale relative paths cannot be reused.
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --onefile `
+            --windowed `
+            --name PS5HomebrewDoctor `
+            --distpath $dist `
+            --workpath $work `
+            --specpath $specTemp `
+            --add-data "$db;." `
+            $app
+          if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE. See the compiler output above." }
+          $exe = Join-Path $dist "PS5HomebrewDoctor.exe"
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+            Write-Host "Build output folder contents:"
+            Get-ChildItem -LiteralPath $dist -Force | Format-Table Name, Length
+            Write-Host "Recent build files:"
+            Get-ChildItem -LiteralPath $work -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 80 FullName, Length | Format-Table -AutoSize
+            throw "PyInstaller completed without producing dist\\PS5HomebrewDoctor.exe. See the output above."
+          }
+          $size = (Get-Item -LiteralPath $exe).Length
+          if ($size -lt 5000000) { throw "The EXE is unexpectedly small ($size bytes); refusing to publish an incomplete build." }
+          $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath "$exe.sha256" -Value "$hash  PS5HomebrewDoctor.exe" -Encoding ascii
+          Write-Host "SUCCESS: $exe ($size bytes)"
+          Write-Host "SHA256: $hash"
+
+      - name: Upload build artifact for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: PS5HomebrewDoctor-Windows-x64
+          path: |
+            dist/PS5HomebrewDoctor.exe
+            dist/PS5HomebrewDoctor.exe.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach executable to the published GitHub Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) { throw "Release tag could not be resolved." }
+          gh release upload $env:RELEASE_TAG `
+            "dist/PS5HomebrewDoctor.exe" `
+            "dist/PS5HomebrewDoctor.exe.sha256" `
+            --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Could not attach the EXE to release $env:RELEASE_TAG." }
+          Write-Host "Attached Windows EXE to release $env:RELEASE_TAG."
