@@ -17,8 +17,14 @@
 - **Detects known patterns:** compares log lines against the local `knowledge_base.json` database, which contributors can extend.
 - **Uses additional context:** firmware, ShadowMountPlus and KStuff Lite versions, game location (USB/internal SSD), format (folder/image), and when the issue started can help determine how relevant a rule is.
 - **Explains each finding:** shows evidence, estimated confidence, source status, limitations, and suggested next checks.
+- **Context-specific compatibility notes:** exact combinations of firmware, ShadowMountPlus/KStuff Lite versions, source type, and trigger can surface separately from log-matched diagnoses. A note is not proof that an error occurred.
+- **Read-only scanner inspection:** queries custom scan roots and `manual.lst` sources through supported API endpoints. It does not start a rescan or change settings; older API builds may not expose this information.
+- **Error timeline:** highlights suspicious log lines in file order while preserving the original text.
+- **Verified diagnostic database updates:** manually check for a newer knowledge base, verify its SHA-256 and JSON schema, keep a backup, and roll back locally if needed. Only diagnostic rules are downloaded; logs are never uploaded.
+- **Community-ready reports:** include knowledge-base version information and an optional follow-up template for whether suggested steps were tested and worked.
 - **Surfaces unclassified errors:** likely error/crash lines without a matching rule can be shown for further investigation.
 - **Exports reports:** save a report to share with the community. The anonymization option redacts IP addresses and common user-folder paths.
+- **Language-aware reports:** reports follow the selected UI language, while original log evidence remains unchanged.
 - **Supports English and Portuguese**, plus light and dark themes with a locally saved preference.
 - **Offers a small number of reversible local rename actions:** only for supported `.ffpfs` / `.ffpfsc` filename scenarios. These actions rename a file on the Windows PC; they do not edit file contents or directly write to the PS5.
 
@@ -60,6 +66,12 @@ The integration uses the ShadowMountPlus API endpoints `/api/v1/version`, `/api/
 - Confidence is an estimate based on the rule and available evidence, not a statistical guarantee.
 - A low-confidence or unclassified finding needs context: the complete log, firmware and tool versions, and the exact action that triggered the issue.
 - Suggestions are presented for the user to review. The app does not change the PS5 through the API.
+
+## Updating the diagnostic knowledge base
+
+Use **More options → Update diagnostic database** to check for a newer knowledge base. After confirmation, the app downloads only `knowledge_base.json` from this repository, verifies the SHA-256 listed in `updates.json`, validates the schema and English translations, and stores it in the per-user app-data directory. The previous database is backed up locally and can be restored through **More options → Restore previous diagnostic database**. The executable itself is not silently updated, and no logs, reports, or console addresses are uploaded.
+
+`updates.json` must be published alongside its matching `knowledge_base.json` on the default branch. Until both files are published, this update check will not find the new manifest.
 
 ## Privacy and safety
 
@@ -105,6 +117,10 @@ The output is written to `dist\PS5JailbreakDoctor.exe`. For public releases, the
 | `knowledge_base.json` | Local error-pattern database, with sources and recommendations |
 | `safe_actions.py` | Limited reversible local filename actions |
 | `i18n.py` | English and Portuguese UI strings |
+| `updates.py` / `updates.json` | Explicit, checksum-verified diagnostic knowledge-base updates |
+| `UPDATES.md` | Maintainer guide for publishing database updates |
+| `tests/` | Regression tests for localization, diagnostic context, and updates |
+| `CHANGELOG.md` | User-facing changes by version |
 | `.github/workflows/build-windows-exe.yml` | Windows x64 executable workflow |
 | `FONTES_PT.md` | Public references used by knowledge-base rules |
 

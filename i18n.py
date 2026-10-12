@@ -37,6 +37,7 @@ UI_PT_EN = {
     "Detalhes técnicos (opcional) ▸": "Technical details (optional) ▸",
     "Ocultar detalhes técnicos ▾": "Hide technical details ▾",
     "Informação opcional para afinar o diagnóstico": "Optional information to refine the diagnosis",
+    "Informação": "Information",
     "Firmware": "Firmware",
     "ShadowMountPlus": "ShadowMountPlus",
     "KStuff Lite": "KStuff Lite",
@@ -208,6 +209,96 @@ UI_PT_EN = {
     "Não foi possível preparar o teste": "Could not prepare the test",
     "Os dados fornecidos não correspondem ao cenário documentado. Não vou preparar esta alteração.": "The supplied information does not match the documented scenario. This change will not be prepared.",
     "Só funciona com um ficheiro .ffpfs/.ffpfsc acessível ao Windows. A app altera apenas o nome local; não edita o conteúdo nem escreve na PS5. Para nomes com limite desconhecido, a sugestão é experimental.": "Works only with a .ffpfs/.ffpfsc file accessible to Windows. The app changes only the local filename; it does not edit the contents or write to the PS5. Suggestions for unknown filename limits are experimental.",
+    "Relato comunitário — correção adicionada ao código após o relato": "Community report — a code fix was added after the report",
+    "Relato aberto — causa ainda por confirmar": "Open report — root cause still unconfirmed",
+    "Relato encerrado; confirmar se o build inclui a correção": "Closed report; confirm whether the installed build includes the fix",
+    'É necessária uma versão mais recente da aplicação para esta base.': 'A newer application version is required for this database.',
+    'Esta base requer a aplicação versão ': 'This database requires application version ',
+    ' ou superior.': ' or later.',
+    'A base não foi transferida. Atualiza primeiro a aplicação através do repositório oficial.': 'The database was not downloaded. Update the application first from the official repository.',
+    'Erro ao procurar atualizações': 'Error checking for updates',
+    'Falha na atualização': 'Update failed',
+    'Atualização disponível': 'Update available',
+    'Atualização concluída': 'Update complete',
+    'Confirmar reversão': 'Confirm rollback',
+    'Restaurar base de diagnósticos': 'Restore diagnostic database',
+    'Reversão concluída': 'Rollback complete',
+    'Não foi possível restaurar a base': 'Could not restore database',
+    "Atualizar base de diagnósticos…": "Update diagnostic database…",
+    "Reverter atualização da base…": "Restore previous diagnostic database…",
+    "A verificar atualizações da base de diagnósticos…": "Checking diagnostic database updates…",
+    "A base de diagnósticos já está atualizada.": "The diagnostic database is already up to date.",
+    "Existe uma atualização da base de diagnósticos.": "A diagnostic database update is available.",
+    "Queres transferir e instalar a versão ": "Would you like to download and install version ",
+    "Alterações incluídas:": "Included changes:",
+    "A transferir e validar a base de diagnósticos…": "Downloading and validating the diagnostic database…",
+    "Base de diagnósticos atualizada para ": "Diagnostic database updated to ",
+    "Atualização cancelada.": "Update cancelled.",
+    "A procurar atualizações exige uma ligação à Internet. Os logs não são enviados.": "Checking for updates requires an internet connection. Logs are not uploaded.",
+    "Não existe uma cópia de segurança válida para restaurar.": "There is no valid backup to restore.",
+    "Queres restaurar a cópia de segurança da base de diagnósticos ": "Would you like to restore the diagnostic database backup ",
+    "Base de diagnósticos restaurada para ": "Diagnostic database restored to ",
+    "Verificar scanner": "Inspect scanner",
+    "Esta aplicação só lê a versão, os logs e os detalhes do scanner; não altera a consola.": "This app only reads the version, logs, and scanner details; it does not modify the console.",
+    "A API não devolveu uma resposta de versão válida.": "The API did not return a valid version response.",
+    "A versão da API não anuncia leitura das definições do scanner.": "This API version does not advertise scanner settings reads.",
+    "A versão da API não anuncia a lista de origens manuais.": "This API version does not advertise manual source listing.",
+    "Não foi possível ler as definições do scanner.": "Could not read scanner settings.",
+    "Não foi possível ler a lista de origens manuais.": "Could not read the manual source list.",
+    "Definições do scanner": "Scanner settings",
+    "Origens manuais": "Manual sources",
+    "A versão instalada não disponibiliza os detalhes do scanner.": "The installed version does not expose scanner details.",
+    "Estado do scanner — leitura apenas": "Scanner status — read-only",
+    "Estado do scanner": "Scanner status",
+    "Apenas leitura; não altera a consola.": "Read-only; does not modify the console.",
+    "Raízes de varrimento personalizadas (scan_paths)": "Custom scan roots (scan_paths)",
+    "A API não devolveu raízes personalizadas. Isto não significa que as raízes predefinidas estejam desativadas.": "The API returned no custom roots. This does not mean the default roots are disabled.",
+    "Profundidade de varrimento (scan_depth)": "Scan depth (scan_depth)",
+    "As definições do scanner não estão disponíveis nesta versão da API.": "Scanner settings are not available in this API version.",
+    "Origens manuais (manual.lst)": "Manual sources (manual.lst)",
+    "Origens listadas": "Listed sources",
+    "A lista não contém origens manuais.": "No manual sources are listed.",
+    "A lista de origens manuais não está disponível nesta versão da API.": "The manual source list is not available in this API version.",
+    "Avisos": "Notes",
+    "Nota: a API apresenta definições e origens manuais; esta consulta não executa uma nova varredura nem confirma que cada jogo pode ser iniciado.": "Note: the API reports settings and manual sources; this check does not run a new scan or confirm that each game can launch.",
+    "Estado do scanner lido. Consulta o painel para veres os caminhos configurados.": "Scanner status read. Check the panel to view configured paths.",
+    "Verificação do scanner concluída; não foram feitas alterações.": "Scanner check completed; no changes were made.",
+    "Pré-verificação antes de alterar ficheiros": "Pre-flight checks before changing files",
+    "Contexto técnico incompleto": "Incomplete technical context",
+    "A aplicação não consegue comparar com rigor os relatos dependentes de versão sem estes dados: ": "The app cannot reliably compare version-specific reports without these details: ",
+    "firmware": "firmware",
+    "versão do ShadowMountPlus": "ShadowMountPlus version",
+    "versão do KStuff Lite": "KStuff Lite version",
+    "Preenche o firmware da PS5 e as versões exatas do ShadowMountPlus e KStuff Lite, se as conseguires confirmar.": "Fill in the PS5 firmware and exact ShadowMountPlus/KStuff Lite versions, if you can confirm them.",
+    "Não assumes que um relato de outra versão se aplica ao teu caso.": "Do not assume a report from another version applies to your case.",
+    "Pré-verificação do scanner e da origem": "Scanner and source pre-flight check",
+    "Os logs incluem referências a scanpath, scan_depth, param.json ou a uma varredura sem resultados. Verifica a configuração e a estrutura antes de reinstalar ou apagar ficheiros.": "The logs mention scanpath, scan_depth, param.json, or a scan with no results. Check the configuration and source layout before reinstalling or deleting files.",
+    "Confirma no debug.log quais as raízes de varrimento ativas e quantos jogos foram encontrados.": "Check debug.log for the active scan roots and the number of games found.",
+    "Se existir uma linha scanpath= no config.ini, verifica se inclui a localização pretendida: raízes personalizadas podem substituir as raízes padrão.": "If config.ini contains a scanpath= line, check whether it includes the intended location: custom roots may replace the default roots.",
+    "Confirma se scan_depth alcança o nível onde está a pasta do jogo e se sce_sys/param.json existe na raiz esperada.": "Check that scan_depth reaches the folder containing the game and that sce_sys/param.json exists at the expected root.",
+    "Para origens fora das raízes de varrimento, consulta a documentação da build instalada sobre /data/shadowmount/manual.lst antes de editar a configuração.": "For sources outside the scan roots, check the documentation for your installed build about /data/shadowmount/manual.lst before editing the configuration.",
+    "Ordem em que os sinais aparecem no ficheiro; isto não prova uma causa-raiz.": "Order in which signals appear in the file; this does not prove root cause.",
+    "Cronologia de eventos": "Event timeline",
+    "Sinal crítico": "Critical signal",
+    "Linha": "Line",
+    "Cronologia de erros (linhas do log)": "Error timeline (log lines)",
+    "Linha ": "Line ",
+    "Possível sinal crítico": "Possible critical signal",
+    "Possível erro": "Possible error",
+    "Aviso / estado": "Warning / state",
+    "Notas de compatibilidade para o contexto indicado": "Compatibility notes for the supplied context",
+    "Nota contextual": "Context note",
+    "Estado da evidência: ": "Evidence status: ",
+    "Nenhuma nota de compatibilidade corresponde a todas as versões e condições indicadas.": "No compatibility note matches all supplied versions and conditions.",
+    "Resultado do diagnóstico": "Diagnostic outcome",
+    "Não testado / Resolveu / Não resolveu": "Not tested / Resolved / Not resolved",
+    "Passos que foram testados": "Steps that were tested",
+    "Informação adicional": "Additional information",
+    "Revê e anonimiza o relatório antes de o publicares.": "Review and anonymize the report before publishing it.",
+    "Última revisão da base": "Knowledge base last reviewed",
+    "Notas de compatibilidade": "Compatibility notes",
+    "Estado da evidência": "Evidence status",
+    "Acompanhamento após o teste (opcional)": "Follow-up after testing (optional)",
 }
 
 # English diagnostic text is kept outside the rule database so the database remains easy to edit.
@@ -358,6 +449,12 @@ RULE_EN = {
 "steps":["Confirm the line reports an access failure, not just a successful mount of that path.","Record firmware, ShadowMountPlus version, and whether the title uses folder or image format.","Do not copy system fonts into the game or change global permissions.","If it persists, attach the relevant excerpt and debug.log to the maintainer's issue."],
 "fix_summary":"No general fix is confirmed. Confirm the log shows a real access failure before taking action.",
 "applicability":"Open report from October 2026 for ShadowMountPlus 1.7beta4; not a universal cause."},
+"SHADOW_DUPLICATE_TITLE_ID": {
+"title":"Duplicate Title ID detected across sources",
+"summary":"ShadowMountPlus reports that more than one source maps to the same Title ID. Duplicate sources can make scanning and mounting ambiguous; the notification does not mean either source is corrupt.",
+"steps":["Record the Title ID and list the folders/images that contain the same title.", "Keep one active source per Title ID in the scanned locations, following the current ShadowMountPlus documentation. Do not delete originals as the first step.", "If a source is outside the normal scan roots, check the documented manual.lst option and verify the exact path before changing configuration.", "Rescan and review debug.log. If the warning persists with one source, share an anonymized report and the relevant version information."],
+"fix_summary":"Identify duplicate sources for the same Title ID and keep only one active source in the scan set; preserve a backup before removing or moving files.",
+"applicability":"Based on the ShadowMountPlus 1.7 troubleshooting documentation; behavior can differ by version and source layout."},
 }
 
 # More app-specific short phrases and messages.
@@ -403,20 +500,154 @@ UI_PT_EN.update({
     "Título já instalado": "Installed title",
 })
 
-# Translate every supported knowledge-base text field by rule ID.
+# Additional UI and runtime-error phrases found during the English-language audit.
+# Keep user-facing exceptions localized too; internal identifiers and log contents are
+# intentionally left untouched.
+UI_PT_EN.update({
+    "Avisos: ": "Warnings: ",
+    "Falha no endpoint de versão: ": "Version endpoint failed: ",
+    "A API respondeu com erro: ": "The API returned an error: ",
+    "Teste preparado": "Test prepared",
+    "Estado: ": "Status: ",
+    " · passos concluídos: ": " · steps completed: ",
+    "Nome alterado": "Renamed",
+    "Revertido": "Reverted",
+    "A porta tem de estar entre 1 e 65535.": "The port must be between 1 and 65535.",
+    "Não foi possível encontrar um nome de destino livre.": "Could not find an available destination name.",
+    "Esta regra não tem uma ação local reversível associada.": "This rule has no associated reversible local action.",
+    "Esta regra não disponibiliza uma renomeação assistida.": "This rule does not support an assisted rename.",
+    "O ficheiro selecionado não existe ou não é um ficheiro normal.": "The selected file does not exist or is not a regular file.",
+    "Por segurança, não renomeio links simbólicos.": "For safety, symbolic links are not renamed.",
+    "Seleciona o ficheiro numa unidade local. Caminhos de rede não são suportados neste teste.": "Select a file on a local drive. Network paths are not supported for this test.",
+    "Seleciona um ficheiro .ffpfs ou .ffpfsc. A extensão não será alterada.": "Select a .ffpfs or .ffpfsc file. The extension will not be changed.",
+    "O nome selecionado não contém parênteses; não corresponde ao cenário desta regra.": "The selected name does not contain parentheses, so it does not match this rule's scenario.",
+    "Este nome tem menos de 60 caracteres. Como o limite exato não está documentado, a app não vai sugerir uma renomeação automática para este caso.": "This name is shorter than 60 characters. Since the exact limit is undocumented, the app will not suggest an automatic rename for this case.",
+    "O nome proposto é igual ao atual; não há alteração a fazer.": "The proposed name matches the current name; there is nothing to change.",
+    "A alteração não existe no histórico.": "The change does not exist in the history.",
+    "Esta alteração já foi revertida ou não está disponível para reversão.": "This change has already been undone or is no longer available to undo.",
+    "O ficheiro renomeado não foi encontrado. Liga a unidade onde está guardado e tenta novamente.": "The renamed file could not be found. Connect the drive where it is stored and try again.",
+    "Já existe um ficheiro com o nome original. Não vou substituir ficheiros durante a reversão.": "A file with the original name already exists. Files will not be overwritten during undo.",
+    "O ficheiro parece ter sido modificado após a renomeação. A reversão automática foi bloqueada para evitar perder dados.": "The file appears to have changed after it was renamed. Automatic undo was blocked to prevent data loss.",
+    "Schema da base de conhecimento inválido.": "The knowledge-base schema is invalid.",
+    "Campos compatíveis com o relato/documentação: ": "Fields matching the report/documentation: ",
+    ". Isto reforça a relevância, mas não prova a causa.": ". This increases relevance, but does not prove the cause.",
+    "Eventos de erro ainda não classificados": "Unclassified error events",
+    "Encontrei linhas com termos de erro/crash que não foram explicadas pelas regras atuais. A base é incompleta por definição: usa estas linhas para acrescentar uma regra nova, sem assumir uma causa.": "I found lines containing error/crash terms that are not explained by the current rules. The database is inherently incomplete: use these lines to add a new rule without assuming a cause.",
+    "Lê 20–40 linhas antes do primeiro evento e procura a primeira falha, não apenas a última mensagem.": "Read 20–40 lines before the first event and look for the first failure, not just the final message.",
+    "Confirma firmware, versões de KStuff Lite e ShadowMountPlus, tipo de origem e Title ID.": "Confirm the firmware, KStuff Lite and ShadowMountPlus versions, source type, and Title ID.",
+    "Guarda o relatório anonimizado e compara com o repositório de issues do projeto correspondente.": "Save the anonymized report and compare it with the relevant project's issue tracker.",
+    "Não executes comandos, alteres permissões ou apagues ficheiros só por esta classificação genérica.": "Do not run commands, change permissions, or delete files based only on this generic classification.",
+    "Ainda não há uma correção segura associada a estas linhas; é necessária triagem.": "No safe fix is associated with these lines yet; further triage is needed.",
+    "a API não devolveu texto de log reconhecível.": "the API returned no recognizable log text.",
+    " · Confiança: ": " · Confidence: ",
+    "contexto divergente": "context mismatch",
+    "Alta para o significado; baixa para a causa": "High for the meaning; low for the cause",
+    "Alta para a mensagem; baixa para a causa subjacente": "High for the message; low for the underlying cause",
+    "Alta para a mensagem; causa desconhecida": "High for the message; cause unknown",
+    "Alta para o crash; baixa para a causa": "High for the crash; low for the cause",
+    "Alta para o registo falhado; baixa para a causa": "High for the failed registration; low for the cause",
+    "Baixa a média": "Low to medium",
+    "Não apliques já o workaround específico desta regra: o contexto escolhido não corresponde ao cenário registado. Confirma o formato, as versões e quando começou o erro.": "Do not apply this rule's specific workaround yet: the selected context does not match the recorded scenario. Confirm the format, versions, and when the error started.",
+    "# PS5 Jailbreak Doctor — Relatório de diagnóstico": "# PS5 Jailbreak Doctor — Diagnostic Report",
+    "Versão da ferramenta": "Tool version",
+    "Base de conhecimento": "Knowledge base",
+    "regras locais": "local rules",
+    "Método": "Method",
+    "regras locais; sem envio automático de dados.": "local rules; no data is uploaded automatically.",
+    "Anonimização de caminhos/IP": "Path/IP anonymization",
+    "ativada": "enabled",
+    "desativada": "disabled",
+    "Fontes carregadas": "Loaded sources",
+    "texto manual / não especificado": "manual text / unspecified",
+    "Este relatório apresenta hipóteses com base nas linhas encontradas. Não confirma a causa sem validação adicional.": "This report presents hypotheses based on matching log lines. It does not confirm the cause without further validation.",
+    "Metadados detetados": "Detected metadata",
+    "Não foram detetados Title IDs, firmware ou versões reconhecíveis.": "No recognizable Title IDs, firmware, or version mentions were detected.",
+    "Contexto fornecido": "Provided context",
+    "Não foi fornecido contexto adicional.": "No additional context was provided.",
+    "Resultados": "Findings",
+    "Formato da origem": "Source format",
+    "Armazenamento": "Storage",
+    "Confiança": "Confidence",
+    "Contexto": "Context",
+    "Fontes": "Sources",
+    "Não foi encontrada uma regra conhecida. Isso não significa que os logs estejam limpos; pode ser necessária uma regra nova ou contexto adicional.": "No known rule matched. This does not mean the logs are clean; a new rule or additional context may be needed.",
+    "Gravidade indicativa": "Indicative severity",
+    "Tipo de evidência": "Evidence type",
+    "Compatibilidade com contexto": "Context match",
+    "Evidência": "Evidence",
+    "Possível correção / orientação": "Possible fix / guidance",
+    "Aplicabilidade / limites": "Applicability / limitations",
+    "Próximos passos sugeridos": "Suggested next steps",
+    "Limites e privacidade": "Limitations and privacy",
+    "A análise é local e baseada em assinaturas; a confiança refere-se à interpretação da mensagem, não à causa final.": "Analysis is local and signature-based; confidence refers to the interpretation of the message, not the final cause.",
+    "Só foram incluídas linhas de evidência correspondentes; o log completo não é incluído automaticamente.": "Only matching evidence lines are included; the full log is not included automatically.",
+    "Revê manualmente o relatório antes de o publicar, especialmente se desativaste a anonimização.": "Review the report manually before publishing it, especially if path/IP anonymization is disabled.",
+    "A ferramenta não executa payloads, não altera configurações, não instala/desinstala títulos e não elimina ficheiros.": "The tool does not run payloads, change settings, install/uninstall titles, or delete files.",
+    "A base inclui relatos de comunidade que podem estar por resolver; uma issue aberta ou workaround relatado não é uma correção universal.": "The database includes community reports that may remain unresolved; an open issue or reported workaround is not a universal fix.",
+    "IDs dos títulos": "Title IDs",
+    "Referências de firmware": "Firmware mentions",
+    "Referências de versão": "Version mentions",
+    "guia manual": "manual guide",
+    "solução relatada — confirmar antes de aplicar": "reported fix — confirm before applying",
+    "alternativa relatada pela comunidade": "community-reported workaround",
+    "recolher mais dados; sem correção confirmada": "collect more data; no confirmed fix",
+    "triagem manual": "manual triage",
+    "triagem segura": "safe triage",
+    "evitar temporariamente a operação": "temporarily avoid the operation",
+    "não automatizar — requer validação manual": "do not automate — manual validation required",
+    "pasta de jogo": "game folder",
+    "imagem .ffpfs/.ffpfsc": "image .ffpfs/.ffpfsc",
+    "imagem LZ4": "LZ4 image",
+    "título já instalado": "installed title",
+    "outro formato": "other format",
+    "SSD interno": "internal SSD",
+    "transferência entre USB e SSD interno": "USB-to-internal SSD transfer",
+    "após retoma do modo de repouso": "after resuming from rest mode",
+    "após sair/fechar o jogo": "after closing a game",
+    "durante instalação/registo": "during installation/registration",
+    "ao iniciar o jogo": "when launching a game",
+    "durante cópia/movimentação de ficheiros": "during file copy/move",
+    "em vários jogos": "multiple titles",
+    "apenas num jogo": "one title only",
+    "desconhecida": "unknown",
+    "exemplo integrado (dados fictícios)": "built-in demo (sample data)",
+})
+
+# Knowledge-base translations are rebuilt when a verified remote database is installed.
+# This lets new rules arrive with their own English text without requiring an app binary update.
+_KB_TRANSLATIONS: dict[str, str] = {}
+
+
 def register_knowledge_base(data: dict) -> None:
+    global _TRANSLATIONS
+    _KB_TRANSLATIONS.clear()
     for rule in data.get("rules", []):
-        translations = RULE_EN.get(rule.get("id"), {})
+        embedded = ((rule.get("translations") or {}).get("en") or {})
+        translations = embedded if isinstance(embedded, dict) else {}
+        if not translations:
+            translations = RULE_EN.get(rule.get("id"), {})
         for field in ("title", "summary", "fix_summary", "applicability"):
             src = rule.get(field)
             dst = translations.get(field)
             if isinstance(src, str) and isinstance(dst, str):
-                _TRANSLATIONS[src] = dst
+                _KB_TRANSLATIONS[src] = dst
         src_steps = rule.get("steps", [])
         dst_steps = translations.get("steps", [])
         for src, dst in zip(src_steps, dst_steps):
             if isinstance(src, str) and isinstance(dst, str):
-                _TRANSLATIONS[src] = dst
+                _KB_TRANSLATIONS[src] = dst
+    for entry in data.get("compatibility_matrix", []):
+        translations = ((entry.get("translations") or {}).get("en") or {})
+        if not isinstance(translations, dict):
+            continue
+        for field in ("title", "summary", "status"):
+            src, dst = entry.get(field), translations.get(field)
+            if isinstance(src, str) and isinstance(dst, str):
+                _KB_TRANSLATIONS[src] = dst
+    # Remove stale strings from an older database after an update/rollback.
+    _TRANSLATIONS.clear()
+    _TRANSLATIONS.update(UI_PT_EN)
+    _TRANSLATIONS.update(_KB_TRANSLATIONS)
 
 
 def set_language(language: str) -> None:
@@ -449,6 +680,7 @@ def install_tkinter_translation() -> None:
     OriginalCombo = ttk.Combobox
     OriginalNotebook = ttk.Notebook
     OriginalMenu = tk.Menu
+    OriginalCheckbutton = tk.Checkbutton
 
     class LocalizedLabel(OriginalLabel):
         def __init__(self, master=None, **kwargs):
@@ -480,6 +712,12 @@ def install_tkinter_translation() -> None:
                 kwargs["text"] = tr(kwargs["text"])
             return super().add(child, **kwargs)
 
+    class LocalizedCheckbutton(OriginalCheckbutton):
+        def __init__(self, master=None, **kwargs):
+            if "text" in kwargs:
+                kwargs["text"] = tr(kwargs["text"])
+            super().__init__(master, **kwargs)
+
     class LocalizedMenu(OriginalMenu):
         def add_command(self, *args, **kwargs):
             if "label" in kwargs:
@@ -500,6 +738,7 @@ def install_tkinter_translation() -> None:
     ttk.Combobox = LocalizedCombo
     ttk.Notebook = LocalizedNotebook
     tk.Menu = LocalizedMenu
+    tk.Checkbutton = LocalizedCheckbutton
 
     # Native message boxes and file picker titles use the same catalog.
     for name in ("showinfo", "showwarning", "showerror", "askyesno", "askokcancel", "askquestion"):

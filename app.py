@@ -13,13 +13,16 @@ from tkinter import ttk, filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
 from pathlib import Path
 
+import doctor_core
 from doctor_core import (
     APP_VERSION, KNOWLEDGE_BASE, RULES, analyze_logs, evidence_status_pt,
-    fix_type_pt, make_markdown_report,
+    fix_type_pt, make_markdown_report, build_preflight_checks, extract_error_timeline, evaluate_compatibility,
+    summarize_scanner_snapshot,
 )
 from safe_actions import list_actions, rename_for_rule, rollback_action
 from session_utils import format_source_blocks
 from app_paths import data_path
+from updates import check_for_updates, download_update, install_update, latest_backup, restore_last_backup, UpdateError
 from i18n import set_language as set_ui_language, tr, register_knowledge_base, install_tkinter_translation
 
 register_knowledge_base(KNOWLEDGE_BASE)
@@ -104,6 +107,45 @@ def _context_option_code(key: str, value: str) -> str:
             if value == label:
                 return code
     return value or "unknown"
+
+
+# Store resolution outcomes as stable codes, never as the currently selected UI language.
+_RESULT_LABELS_PT = {
+    "not_tested": "Ainda não testado",
+    "in_progress": "Em teste",
+    "resolved": "Resolveu",
+    "not_resolved": "Não resolveu",
+    "not_applied": "Não apliquei",
+}
+_RESULT_ALIASES = {label.casefold(): code for code, label in _RESULT_LABELS_PT.items()}
+_RESULT_ALIASES.update({tr(label, "en").casefold(): code for code, label in _RESULT_LABELS_PT.items()})
+
+
+def _result_code(value) -> str:
+    """Normalize current and legacy PT/EN outcome labels to a stable history code."""
+    raw = str(value or "").strip()
+    folded = raw.casefold()
+    if folded in _RESULT_LABELS_PT:
+        return folded
+    return _RESULT_ALIASES.get(folded, raw or "?")
+
+
+def _result_label(value) -> str:
+    """Display a result code or legacy PT/EN label in the active UI language."""
+    code = _result_code(value)
+    label = _RESULT_LABELS_PT.get(code)
+    return tr(label) if label else str(value or "?")
+
+
+def _action_status_label(value) -> str:
+    """Translate the internal status codes used by the reversible-action journal."""
+    labels = {
+        "renamed": "Nome alterado",
+        "reverted": "Revertido",
+        "rolled_back": "Revertido",
+    }
+    raw = str(value or "?")
+    return tr(labels.get(raw.casefold(), raw))
 
 
 def api_post(host: str, port: str, route: str, payload: dict, timeout: float = 5.0):
@@ -207,6 +249,7 @@ class DoctorApp(tk.Tk):
         self.source_status = tk.StringVar(value=tr("Origem: ainda não há logs carregados"))
         self.findings = []
         self.last_api_version = ""
+        self.last_scanner_snapshot = None
         self.last_analyzed_text = ""
         self.last_analyzed_context = {}
         self._style()
@@ -351,6 +394,9 @@ class DoctorApp(tk.Tk):
         self._set_api_info(state["api_info_source"])
 
         self._clear_cards()
+        if state["log_text"]:
+            self._render_timeline(extract_error_timeline(state["log_text"]))
+            self._render_compatibility_notices(state["context"])
         if self.findings:
             for index, finding in enumerate(self.findings, 1):
                 self._render_finding(finding, index)
@@ -358,6 +404,15 @@ class DoctorApp(tk.Tk):
             self.metric_vars["errors"].set(str(error_count))
             self.metric_vars["warnings"].set(str(max(0, len(self.findings) - error_count)))
             self.metric_vars["matches"].set(tr(f"{len(self.findings)} resultado(s)"))
+        elif state["log_text"].strip():
+            self._add_empty_card(
+                "Não foram encontrados sinais de erro reconhecíveis",
+                "Isto não garante que esteja tudo bem. Confirma se o log inclui as linhas em redor do problema e verifica as notas de contexto acima.",
+                icon="i", color=ACCENT,
+            )
+            self.metric_vars["errors"].set("0")
+            self.metric_vars["warnings"].set("0")
+            self.metric_vars["matches"].set(tr("0 resultado(s)"))
         else:
             self.show_welcome()
         try:
@@ -452,7 +507,8 @@ class DoctorApp(tk.Tk):
         right = ttk.Frame(header)
         right.pack(side="right", anchor="n")
         ttk.Label(right, text=f"v{APP_VERSION}", font=("Segoe UI", 9, "bold")).pack(anchor="e")
-        ttk.Label(right, text=f"{len(RULES)} verificações locais", style="Sub.TLabel").pack(anchor="e", pady=(2, 0))
+        self.rules_count_label = ttk.Label(right, text=f"{len(RULES)} verificações locais", style="Sub.TLabel")
+        self.rules_count_label.pack(anchor="e", pady=(2, 0))
 
         actions = ttk.Frame(self, padding=(20, 0, 20, 10))
         actions.pack(fill="x")
@@ -472,6 +528,9 @@ class DoctorApp(tk.Tk):
                                  disabledforeground=MUTED, relief="solid", borderwidth=1)
         self.more_menu.add_command(label="Guardar relatório…", command=self.save_report)
         self.more_menu.add_command(label="Histórico e reversões…", command=self.open_history)
+        self.more_menu.add_separator()
+        self.more_menu.add_command(label="Atualizar base de diagnósticos…", command=self.check_diagnostic_updates)
+        self.more_menu.add_command(label="Reverter atualização da base…", command=self.rollback_diagnostic_update)
         self.more_menu.add_separator()
         self.more_menu.add_checkbutton(label="Anonimizar relatório", variable=self.anonymize)
         self.more_menu.add_command(label="Limpar sessão", command=self.clear)
@@ -618,7 +677,9 @@ class DoctorApp(tk.Tk):
         buttons.grid(row=2, column=0, columnspan=4, sticky="w", pady=(14, 0))
         self.btn_test = ttk.Button(buttons, text="Testar ligação", command=self.test_api)
         self.btn_test.pack(side="left", padx=(0, 8))
-        ttk.Button(buttons, text="Obter logs e analisar", style="Accent.TButton", command=self.fetch_logs).pack(side="left")
+        ttk.Button(buttons, text="Obter logs e analisar", style="Accent.TButton", command=self.fetch_logs).pack(side="left", padx=(0, 8))
+        self.btn_scanner = ttk.Button(buttons, text=tr("Verificar scanner"), command=self.inspect_scanner)
+        self.btn_scanner.pack(side="left")
         self.api_info = tk.StringVar(value=tr("Ainda não ligado. Clica em «Testar ligação» para começar."))
         self.api_info_label = ttk.Label(panel, textvariable=self.api_info, style="PanelSub.TLabel", wraplength=900, justify="left")
         self.api_info_label.grid(row=3, column=0, columnspan=4, sticky="w", pady=(12, 0))
@@ -628,7 +689,7 @@ class DoctorApp(tk.Tk):
         ttk.Label(safety, text="Privacidade e segurança", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
         ttk.Label(safety, text=(
             "A ligação só acontece quando carregas num botão. A API não tem autenticação: usa-a apenas numa rede local de confiança, nunca na Internet. "
-            "Esta aplicação só lê a versão e os logs; não altera a consola."
+            "Esta aplicação só lê a versão, os logs e os detalhes do scanner; não altera a consola."
         ), style="PanelSub.TLabel", wraplength=950, justify="left").pack(anchor="w", pady=(6, 0))
 
     def _get_context(self) -> dict:
@@ -671,6 +732,163 @@ class DoctorApp(tk.Tk):
     def _set_source_status(self, message: str):
         self._source_status_source = message
         self.source_status.set(tr(message))
+
+    def check_diagnostic_updates(self):
+        """Explicitly check for a newer diagnostic database; never sends log data."""
+        self._set_status("A verificar atualizações da base de diagnósticos…", "info")
+        def worker():
+            try:
+                result = check_for_updates(str(doctor_core.KNOWLEDGE_BASE.get("database_version", "0")))
+                self.after(0, lambda result=result: self._finish_update_check(result=result))
+            except Exception as exc:
+                self.after(0, lambda error=str(exc): self._finish_update_check(error=error))
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _finish_update_check(self, result=None, error=None):
+        if error:
+            self._set_status("Não foi possível verificar as atualizações.", "warning")
+            messagebox.showerror("Erro ao procurar atualizações", error, parent=self)
+            return
+        manifest = result["manifest"]
+        if result.get("app_too_old"):
+            self._set_status("É necessária uma versão mais recente da aplicação para esta base.", "warning")
+            messagebox.showwarning(
+                "Atualização da aplicação necessária",
+                f"Esta base requer a aplicação versão {result['minimum_app_version']} ou superior.\n\n"
+                "A base não foi transferida. Atualiza primeiro a aplicação através do repositório oficial.", parent=self)
+            return
+        if not result["update_available"]:
+            self._set_status("A base de diagnósticos já está atualizada.", "ok")
+            messagebox.showinfo(
+                "Base de diagnósticos",
+                f"A versão instalada é {result['current_version']} e não foi encontrada uma versão mais recente.\n\n"
+                "A procura de atualizações não envia logs nem dados da PS5.", parent=self)
+            return
+        meta = manifest["knowledge_base"]
+        changes = "\n".join(f"• {item}" for item in meta.get("changelog", [])) or "• Melhorias na base de conhecimento."
+        question = (
+            "Existe uma atualização da base de diagnósticos.\n\n"
+            f"Versão instalada: {result['current_version']}\nVersão disponível: {result['available_version']}\n\n"
+            f"Alterações incluídas:\n{changes}\n\n"
+            "A aplicação irá transferir apenas regras e notas de diagnóstico. Os logs não são enviados. Instalar agora?"
+        )
+        if messagebox.askyesno("Atualização disponível", question, parent=self):
+            self._install_diagnostic_update(manifest)
+        else:
+            self._set_status("Atualização cancelada.", "info")
+
+    def _install_diagnostic_update(self, manifest):
+        self._set_status("A transferir e validar a base de diagnósticos…", "info")
+        def worker():
+            try:
+                data, raw = download_update(manifest)
+                state = install_update(manifest, data, raw)
+                self.after(0, lambda state=state: self._finish_update_install(state=state))
+            except Exception as exc:
+                self.after(0, lambda error=str(exc): self._finish_update_install(error=error))
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _finish_update_install(self, state=None, error=None):
+        if error:
+            self._set_status("A atualização não foi instalada.", "error")
+            messagebox.showerror("Falha na atualização", error, parent=self)
+            return
+        global KNOWLEDGE_BASE, RULES
+        KNOWLEDGE_BASE = doctor_core.reload_knowledge_base()
+        RULES = KNOWLEDGE_BASE.get("rules", [])
+        register_knowledge_base(KNOWLEDGE_BASE)
+        self.rules_count_label.configure(text=tr(f"{len(RULES)} verificações locais"))
+        raw = self.log_text.get("1.0", "end-1c") if hasattr(self, "log_text") else ""
+        if raw.strip():
+            self.analyze()
+        version = state.get("database_version", "desconhecida")
+        self._set_status(f"Base de diagnósticos atualizada para {version}.", "ok")
+        messagebox.showinfo(
+            "Atualização concluída",
+            f"Base de diagnósticos atualizada para {version}.\n\n"
+            "Foi guardada uma cópia de segurança da versão anterior. A aplicação e os logs não foram enviados.", parent=self)
+
+    def rollback_diagnostic_update(self):
+        backup = latest_backup()
+        if backup is None:
+            messagebox.showinfo("Restaurar base de diagnósticos", "Não existe uma cópia de segurança válida para restaurar.", parent=self)
+            return
+        try:
+            backup_data = json.loads(backup.read_text(encoding="utf-8"))
+            backup_version = backup_data.get("database_version", "desconhecida")
+        except (OSError, json.JSONDecodeError):
+            backup_version = "desconhecida"
+        if not messagebox.askyesno(
+            "Confirmar reversão",
+            f"Queres restaurar a cópia de segurança da base de diagnósticos {backup_version}?\n\n"
+            "A base atual será substituída pela cópia local selecionada. Os logs e as definições da PS5 não serão alterados.", parent=self):
+            return
+        try:
+            state = restore_last_backup()
+            global KNOWLEDGE_BASE, RULES
+            KNOWLEDGE_BASE = doctor_core.reload_knowledge_base()
+            RULES = KNOWLEDGE_BASE.get("rules", [])
+            register_knowledge_base(KNOWLEDGE_BASE)
+            self.rules_count_label.configure(text=tr(f"{len(RULES)} verificações locais"))
+            if self.log_text.get("1.0", "end-1c").strip():
+                self.analyze()
+            self._set_status(f"Base de diagnósticos restaurada para {state['database_version']}.", "ok")
+            messagebox.showinfo("Reversão concluída", f"Base de diagnósticos restaurada para {state['database_version']}.", parent=self)
+        except Exception as exc:
+            messagebox.showerror("Não foi possível restaurar a base", str(exc), parent=self)
+
+    def _render_timeline(self, events):
+        if not events:
+            return
+        card = ttk.Frame(self.cards.inner, style="Panel.TFrame", padding=14)
+        card.pack(fill="x", pady=(0, 10), padx=1)
+        ttk.Label(card, text="Cronologia de erros (linhas do log)", style="Panel.TLabel", font=("Segoe UI", 11, "bold")).pack(anchor="w")
+        ttk.Label(card, text="Ordem em que os sinais aparecem no ficheiro; isto não prova uma causa-raiz.", style="PanelSub.TLabel", wraplength=930).pack(anchor="w", pady=(3, 7))
+        for event in events[:6]:
+            kind = event["kind"]
+            label = "Possível sinal crítico" if kind == "critical" else "Possível erro" if kind == "error" else "Aviso / estado"
+            ttk.Label(card, text=f"{tr('Linha ')}{event['line']} · {label}", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(4, 1))
+            # Log content is data; use a raw Text widget so localisation never rewrites it.
+            excerpt = tk.Text(card, height=2, wrap="word", bg=INPUT, fg=TEXT, insertbackground=TEXT,
+                              relief="flat", borderwidth=0, font=("Consolas", 9), padx=5, pady=3)
+            excerpt.pack(fill="x", pady=(0, 2))
+            excerpt.insert("1.0", str(event["text"]))
+            excerpt.configure(state="disabled")
+
+    def _render_preflight_checks(self, raw: str, context: dict):
+        checks = build_preflight_checks(raw, context)
+        if not checks:
+            return
+        section = ttk.Frame(self.cards.inner, style="Panel.TFrame", padding=14)
+        section.pack(fill="x", pady=(0, 10), padx=1)
+        ttk.Label(section, text=tr("Pré-verificação antes de alterar ficheiros"), style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(0, 7))
+        for index, check in enumerate(checks):
+            if index:
+                ttk.Separator(section).pack(fill="x", pady=8)
+            title = tr(str(check.get("title", "")))
+            ttk.Label(section, text=title, style="Panel.TLabel", font=("Segoe UI", 10, "bold")).pack(anchor="w")
+            ttk.Label(section, text=tr(str(check.get("summary", ""))), style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(4, 4))
+            steps = check.get("steps", [])
+            for number, step in enumerate(steps, 1):
+                ttk.Label(section, text=f"{number}. {tr(str(step))}", style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w", pady=(2, 0))
+
+    def _render_compatibility_notices(self, context):
+        entries = evaluate_compatibility(context, doctor_core.KNOWLEDGE_BASE)
+        if not entries:
+            return
+        for entry in entries:
+            card = ttk.Frame(self.cards.inner, style="Panel.TFrame", padding=14)
+            card.pack(fill="x", pady=(0, 10), padx=1)
+            ttk.Label(card, text=tr("Notas de compatibilidade para o contexto indicado"), style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
+            ttk.Label(card, text=entry.get("title", ""), style="Panel.TLabel", font=("Segoe UI", 11, "bold"), wraplength=930).pack(anchor="w", pady=(4, 4))
+            ttk.Label(card, text=entry.get("severity", "Informação"), style="PanelSub.TLabel").pack(anchor="w")
+            ttk.Label(card, text=entry.get("status", ""), style="PanelSub.TLabel", wraplength=930).pack(anchor="w", pady=(2, 4))
+            ttk.Label(card, text=entry.get("summary", ""), style="PanelSub.TLabel", wraplength=930, justify="left").pack(anchor="w")
+            if entry.get("sources"):
+                row = ttk.Frame(card, style="Panel.TFrame")
+                row.pack(fill="x", pady=(7, 0))
+                for index, url in enumerate(entry["sources"], 1):
+                    ttk.Button(row, text=f"Abrir fonte {index}", command=lambda target=url: webbrowser.open(target)).pack(side="left", padx=(0, 6))
 
     def _add_empty_card(self, title: str, body: str, icon: str = "i", color: str = ACCENT):
         card = ttk.Frame(self.cards.inner, style="Panel.TFrame", padding=18)
@@ -816,7 +1034,7 @@ class DoctorApp(tk.Tk):
             if isinstance(data, dict) and data.get("status", 0) not in (0, None):
                 raise RuntimeError(f"A API respondeu com erro: {data}")
             return lambda app: app._show_api_result(data)
-        self._async_action([self.btn_test, self.btn_fetch], job)
+        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
 
     def _show_api_result(self, data):
         version = data.get("shadowmount_version", "desconhecida") if isinstance(data, dict) else "desconhecida"
@@ -848,7 +1066,112 @@ class DoctorApp(tk.Tk):
                 raise RuntimeError("Não foi possível importar nenhum log. " + " | ".join(errors))
             version_name = version.get("shadowmount_version", "desconhecida") if isinstance(version, dict) else "desconhecida"
             return lambda app: app._logs_fetched(outputs, errors, version_name)
-        self._async_action([self.btn_test, self.btn_fetch], job)
+        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
+
+    def inspect_scanner(self):
+        """Read scanner configuration and manual sources from supported API routes."""
+        def job():
+            host, port = self.host.get(), self.port.get()
+            version = api_post(host, port, "/api/v1/version", {})
+            if not isinstance(version, dict) or version.get("status", 0) not in (0, None):
+                raise RuntimeError(tr("A API não devolveu uma resposta de versão válida."))
+            capabilities = version.get("capabilities", [])
+            capabilities = set(capabilities) if isinstance(capabilities, list) else set()
+            errors = []
+            settings_response = None
+            manual_response = None
+
+            if capabilities and "manage_settings" not in capabilities:
+                errors.append(tr("A versão da API não anuncia leitura das definições do scanner."))
+            else:
+                try:
+                    candidate = api_post(host, port, "/api/v1/settings", {})
+                    if isinstance(candidate, dict) and candidate.get("status", 0) in (0, None):
+                        settings_response = candidate
+                    else:
+                        errors.append(tr("Não foi possível ler as definições do scanner."))
+                except Exception as exc:
+                    errors.append(f"{tr('Definições do scanner')}: {exc}")
+
+            if capabilities and "list_manual_sources" not in capabilities:
+                errors.append(tr("A versão da API não anuncia a lista de origens manuais."))
+            else:
+                try:
+                    candidate = api_post(host, port, "/api/v1/manual/list", {})
+                    if isinstance(candidate, dict) and candidate.get("status", 0) in (0, None):
+                        manual_response = candidate
+                    else:
+                        errors.append(tr("Não foi possível ler a lista de origens manuais."))
+                except Exception as exc:
+                    errors.append(f"{tr('Origens manuais')}: {exc}")
+
+            # A successful version check means the connection works even when these newer,
+            # read-only scanner endpoints are unsupported. Show their availability instead.
+            snapshot = summarize_scanner_snapshot(settings_response, manual_response, errors)
+            version_name = str(version.get("shadowmount_version", "desconhecida"))
+            return lambda app: app._show_scanner_snapshot(snapshot, version_name)
+
+        self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
+
+    def _show_scanner_snapshot(self, snapshot, version):
+        self.last_scanner_snapshot = snapshot
+        self.last_api_version = version
+        self._set_conn_status("✅ Ligação confirmada")
+        win = tk.Toplevel(self)
+        win.title(tr("Estado do scanner — leitura apenas"))
+        win.geometry("760x600")
+        win.minsize(600, 420)
+        win.configure(bg=BG)
+        win.transient(self)
+        outer = ttk.Frame(win, padding=16)
+        outer.pack(fill="both", expand=True)
+        ttk.Label(outer, text=tr("Estado do scanner"), style="Section.TLabel").pack(anchor="w")
+        ttk.Label(outer, text=f"ShadowMountPlus {version} · {tr('Apenas leitura; não altera a consola.')}", style="Sub.TLabel", wraplength=700).pack(anchor="w", pady=(4, 10))
+        output = ScrolledText(outer, wrap="word", bg=INPUT, fg=TEXT, insertbackground=TEXT,
+                              relief="flat", borderwidth=0, font=("Consolas", 10), padx=12, pady=12)
+        output.pack(fill="both", expand=True)
+
+        def line(value=""):
+            output.insert("end", str(value) + "\n")
+
+        line(tr("Raízes de varrimento personalizadas (scan_paths)"))
+        if snapshot.get("settings_available"):
+            paths = snapshot.get("scan_paths", [])
+            if paths:
+                for path in paths:
+                    line(f"  • {path}")
+            else:
+                line(tr("A API não devolveu raízes personalizadas. Isto não significa que as raízes predefinidas estejam desativadas."))
+            depth = snapshot.get("scan_depth")
+            if depth is not None:
+                line(f"{tr('Profundidade de varrimento (scan_depth)')}: {depth}")
+        else:
+            line(tr("As definições do scanner não estão disponíveis nesta versão da API."))
+
+        line()
+        line(tr("Origens manuais (manual.lst)"))
+        if snapshot.get("manual_available"):
+            paths = snapshot.get("manual_paths", [])
+            line(f"{tr('Origens listadas')}: {snapshot.get('manual_count', len(paths))}")
+            if paths:
+                for path in paths:
+                    line(f"  • {path}")
+            else:
+                line(tr("A lista não contém origens manuais."))
+        else:
+            line(tr("A lista de origens manuais não está disponível nesta versão da API."))
+
+        errors = snapshot.get("errors", [])
+        if errors:
+            line()
+            line(tr("Avisos"))
+            for error in errors:
+                line(f"• {error}")
+        line()
+        line(tr("Nota: a API apresenta definições e origens manuais; esta consulta não executa uma nova varredura nem confirma que cada jogo pode ser iniciado."))
+        output.configure(state="disabled")
+        self._set_api_info(tr("Estado do scanner lido. Consulta o painel para veres os caminhos configurados."))
+        self._set_status(tr("Verificação do scanner concluída; não foram feitas alterações."), "ok")
 
     def _logs_fetched(self, outputs, errors, version):
         # A PS5 fetch is a fresh snapshot, not an append operation. Replacing the
@@ -953,7 +1276,12 @@ class DoctorApp(tk.Tk):
         self.last_analyzed_context = self._get_context()
         self.last_analyzed_text = raw
         self.findings = analyze_logs(raw, context=self.last_analyzed_context)
+        timeline = extract_error_timeline(raw)
+        compatibility_notes = evaluate_compatibility(self.last_analyzed_context, doctor_core.KNOWLEDGE_BASE)
         self._clear_cards()
+        self._render_preflight_checks(raw, self.last_analyzed_context)
+        self._render_timeline(timeline)
+        self._render_compatibility_notices(self.last_analyzed_context)
         errors = sum(1 for item in self.findings if item.severity in ("Erro", "Erro crítico"))
         warnings = sum(1 for item in self.findings if item.severity == "Aviso")
         self.metric_vars["errors"].set(str(errors))
@@ -998,7 +1326,7 @@ class DoctorApp(tk.Tk):
 
     def open_resolution_assistant(self, finding):
         win = tk.Toplevel(self)
-        win.title(f"Assistente de resolução — {finding.rule_id}")
+        win.title(tr(f"Assistente de resolução — {finding.rule_id}"))
         win.geometry("760x700")
         win.minsize(650, 560)
         win.configure(bg=BG)
@@ -1039,9 +1367,11 @@ class DoctorApp(tk.Tk):
         footer = ttk.Frame(outer)
         footer.pack(fill="x")
         ttk.Label(footer, text="Resultado do teste", style="Sub.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8))
-        result_var = tk.StringVar(value="Ainda não testado")
-        result_box = ttk.Combobox(footer, textvariable=result_var, state="readonly", width=22,
-                                  values=("Ainda não testado", "Em teste", "Resolveu", "Não resolveu", "Não apliquei"))
+        result_var = tk.StringVar(value=_result_label("not_tested"))
+        result_box = ttk.Combobox(
+            footer, textvariable=result_var, state="readonly", width=22,
+            values=tuple(_result_label(code) for code in _RESULT_LABELS_PT),
+        )
         result_box.grid(row=0, column=1, sticky="w")
         ttk.Label(footer, text="Notas (opcional)", style="Sub.TLabel").grid(row=1, column=0, sticky="nw", pady=(8, 0))
         notes = tk.Text(footer, height=3, width=58, wrap="word", bg=INPUT, fg=TEXT, insertbackground=TEXT, relief="flat")
@@ -1089,7 +1419,7 @@ class DoctorApp(tk.Tk):
         history["entries"].append({
             "id": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + f"-{len(history['entries'])+1}",
             "created_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
-            "rule_id": finding.rule_id, "title": finding.title, "result": result,
+            "rule_id": finding.rule_id, "title": finding.title, "result": _result_code(result),
             "checked_steps": [index + 1 for index, checked in enumerate(checked_steps) if checked],
             "total_steps": len(checked_steps), "notes": notes.strip(), "context": self._get_context(),
         })
@@ -1098,12 +1428,12 @@ class DoctorApp(tk.Tk):
         except OSError as exc:
             messagebox.showerror("Não foi possível guardar", f"O progresso não foi guardado: {exc}", parent=owner)
             return
-        self._set_status(f"Progresso guardado: {finding.rule_id} — {result}.", "ok")
+        self._set_status(f"Progresso guardado: {finding.rule_id} — {_result_label(result)}.", "ok")
         messagebox.showinfo("Progresso guardado", "O progresso foi guardado localmente. Ainda não foi enviada nenhuma ação à PS5.", parent=owner)
 
     def open_history(self):
         win = tk.Toplevel(self)
-        win.title("Histórico e reversão de alterações")
+        win.title(tr("Histórico e reversão de alterações"))
         win.geometry("850x560")
         win.minsize(700, 470)
         win.configure(bg=BG)
@@ -1118,19 +1448,22 @@ class DoctorApp(tk.Tk):
         listbox.pack(fill="both", expand=True)
         records = list_actions()
         for record in records:
-            label = f"[{record.get('status','?')}] {record.get('new_name','?')}  |  ID {record.get('id','?')}"
+            label = f"[{_action_status_label(record.get('status'))}] {record.get('new_name','?')}  |  ID {record.get('id','?')}"
             listbox.insert("end", label)
-        detail = tk.StringVar(value="Seleciona uma alteração para ver os caminhos e o estado.")
+        detail = tk.StringVar(value=tr("Seleciona uma alteração para ver os caminhos e o estado."))
         ttk.Label(rename_tab, textvariable=detail, style="Panel.TLabel", wraplength=780).pack(anchor="w", pady=(8, 8))
         buttonrow = ttk.Frame(rename_tab)
         buttonrow.pack(fill="x")
         def on_select(_event=None):
             selection = listbox.curselection()
             if not selection:
-                detail.set("Seleciona uma alteração.")
+                detail.set(tr("Seleciona uma alteração."))
                 return
             rec = records[selection[0]]
-            detail.set(f"{rec.get('original_path')}  ←  {rec.get('current_path')}\nEstado: {rec.get('status')} · ID: {rec.get('id')}")
+            detail.set(
+                f"{rec.get('original_path')}  ←  {rec.get('current_path')}\n"
+                f"{tr('Estado: ')}{_action_status_label(rec.get('status'))} · ID: {rec.get('id')}"
+            )
         def do_rollback():
             selection = listbox.curselection()
             if not selection:
@@ -1160,8 +1493,8 @@ class DoctorApp(tk.Tk):
         plan_list.pack(fill="both", expand=True)
         history = self._read_resolution_history()["entries"]
         for item in reversed(history):
-            plan_list.insert("end", f"[{item.get('result','?')}] {item.get('rule_id','?')} · {item.get('created_at','')}")
-        plan_detail = tk.StringVar(value="Seleciona um plano para ver as notas.")
+            plan_list.insert("end", f"[{_result_label(item.get('result', '?'))}] {item.get('rule_id','?')} · {item.get('created_at','')}")
+        plan_detail = tk.StringVar(value=tr("Seleciona um plano para ver as notas."))
         ttk.Label(resolution_tab, textvariable=plan_detail, style="Panel.TLabel", wraplength=780).pack(anchor="w", pady=(8, 0))
         def on_plan_select(_event=None):
             sel = plan_list.curselection()
@@ -1169,7 +1502,10 @@ class DoctorApp(tk.Tk):
                 return
             item = list(reversed(history))[sel[0]]
             note = item.get("notes") or "Sem notas."
-            plan_detail.set(f"{item.get('title')} · passos concluídos: {item.get('checked_steps')} / {item.get('total_steps')}\n{note}")
+            plan_title = tr(str(item.get("title") or ""))
+            plan_detail.set(
+                f"{plan_title}{tr(' · passos concluídos: ')}{item.get('checked_steps')} / {item.get('total_steps')}\n{note}"
+            )
         plan_list.bind("<<ListboxSelect>>", on_plan_select)
 
     def save_report(self):
@@ -1188,7 +1524,14 @@ class DoctorApp(tk.Tk):
         )
         if not path:
             return
-        report = make_markdown_report(raw, self.findings, anonymize=self.anonymize.get(), source_names=self.sources, context=current_context)
+        report = make_markdown_report(
+            raw,
+            self.findings,
+            anonymize=self.anonymize.get(),
+            source_names=self.sources,
+            context=current_context,
+            language=self.language,
+        )
         try:
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write(report)

@@ -41,3 +41,39 @@ def data_dir() -> Path:
 
 def data_path(name: str) -> Path:
     return data_dir() / name
+
+
+def user_data_dir() -> Path:
+    """Return the stable per-user writable directory used for remote KB updates.
+
+    Unlike data_dir(), this never points at the source tree. This prevents an
+    in-app update from overwriting project files when running from source.
+    """
+    appdata = Path(os.environ.get("APPDATA", str(Path.home())))
+    base = appdata / "PS5JailbreakDoctor"
+    base.mkdir(parents=True, exist_ok=True)
+    legacy = appdata / "PS5HomebrewDoctor"
+    if legacy.is_dir():
+        for name in ("knowledge_base.json", "knowledge_base.backup-*.json"):
+            if "*" in name:
+                for old_file in legacy.glob(name):
+                    new_file = base / old_file.name
+                    if old_file.is_file() and not new_file.exists():
+                        try:
+                            shutil.copy2(old_file, new_file)
+                        except OSError:
+                            pass
+            else:
+                old_file = legacy / name
+                new_file = base / name
+                if old_file.is_file() and not new_file.exists():
+                    try:
+                        shutil.copy2(old_file, new_file)
+                    except OSError:
+                        pass
+    return base
+
+
+def user_data_path(name: str) -> Path:
+    """Path for update-managed or user-specific files, outside the app bundle."""
+    return user_data_dir() / name

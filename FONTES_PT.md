@@ -1,10 +1,11 @@
 # Fontes da base de conhecimento — PS5 Jailbreak Doctor
 
-Revisão feita em 12-10-2026. A base contém erros documentados publicamente e heurísticas de log (29 regras nesta revisão). O repositório de issues muda com frequência; esta lista não significa que todos os casos continuem presentes nas versões mais recentes.
+Revisão feita em 12-10-2026. A base contém erros documentados publicamente e heurísticas de log (30 regras nesta revisão). O repositório de issues muda com frequência; esta lista não significa que todos os casos continuem presentes nas versões mais recentes.
 
 ## ShadowMountPlus
 
-- [#147 — TitleDir/AppInstallAll bridge indisponível após retomar do modo de repouso](https://github.com/drakmor/ShadowMountPlus/issues/147): caso específico de FW 13.40 e SM+ 1.7beta3; reportado, causa/solução não confirmadas universalmente.
+- [#147 — TitleDir/AppInstallAll bridge indisponível após retomar do modo de repouso](https://github.com/drakmor/ShadowMountPlus/issues/147): caso específico de FW 13.40 e SM+ 1.7beta3. O mantenedor encerrou o issue em 10-10-2026 após adicionar um commit para restaurar os hooks antes do registo; confirmar se a build instalada contém a alteração.
+- [#145 — o hook AppInstallAll perde-se após mudar de jogo](https://github.com/drakmor/ShadowMountPlus/issues/145): report semelhante, encerrado após o mesmo commit de recuperação dos hooks.
 - [#109 — Failed to Install ShellCore Hooks](https://github.com/drakmor/ShadowMountPlus/issues/109): vários firmwares e versões beta; comportamento intermitente, sem solução confirmada.
 - [#141 — registo com `0x80F50005`](https://github.com/drakmor/ShadowMountPlus/issues/141): título/versão específicos; não universalizar o código.
 - [#56 — montagem `.ffpfsc` com `0x00000016 Invalid Argument`](https://github.com/drakmor/ShadowMountPlus/issues/56): relato antigo, versões antigas.
@@ -25,6 +26,8 @@ Revisão feita em 12-10-2026. A base contém erros documentados publicamente e h
 - [#132 — acesso a `/preinst/common/font`](https://github.com/drakmor/ShadowMountPlus/issues/132): relato aberto específico de uma versão beta.
 - [#140 — scan de FPKG instalados após reset](https://github.com/drakmor/ShadowMountPlus/issues/140) e [#149 — follow-up com problema ainda presente](https://github.com/drakmor/ShadowMountPlus/issues/149): relatos contraditórios; a app não recomenda editar `app.db`.
 - [API do ShadowMountPlus 1.7](https://github.com/drakmor/ShadowMountPlus/blob/1.7/docs/api.md): referência para a integração de leitura.
+- [README/documentação de troubleshooting do ShadowMountPlus 1.7](https://github.com/drakmor/ShadowMountPlus): suporte PFS é classificado como experimental; documentação descreve `scanpath`, `scan_depth`, `manual.lst`, estrutura de `sce_sys/param.json` e origens duplicadas por Title ID.
+- Estado de compatibilidade de contexto revisto em 12-10-2026: a app só apresenta uma nota da matriz quando todos os campos definidos nessa entrada coincidem; os campos em falta não contam como confirmação.
 
 ## KStuff Lite e carregamento de payloads
 

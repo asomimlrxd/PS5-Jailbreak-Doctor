@@ -17,8 +17,15 @@
 - **Deteta padrões conhecidos:** compara as linhas encontradas com uma base de conhecimento local em `knowledge_base.json`, que pode ser ampliada por contribuidores.
 - **Usa contexto adicional:** firmware, versões do ShadowMountPlus e KStuff Lite, localização do jogo (USB/SSD interno), formato (pasta/imagem) e o momento em que o erro começou podem ajudar a avaliar a relevância de uma regra.
 - **Explica cada resultado:** mostra evidências, confiança estimada, estado da fonte, limitações e passos sugeridos.
+- **Evidência em primeiro lugar:** os resultados mostram as linhas correspondentes, o nível de confiança estimado, as limitações e os passos seguintes.
+- **Notas de compatibilidade contextual:** combinações exatas de firmware, versões de ShadowMountPlus/KStuff Lite, formato da origem e momento do erro podem gerar avisos separados dos diagnósticos encontrados nos logs. Uma nota não prova que o erro aconteceu.
+- **Verificação do scanner, só de leitura:** consulta as raízes personalizadas e as origens de `manual.lst` através dos endpoints suportados da API. Não inicia uma nova varredura nem altera configurações; versões antigas podem não disponibilizar estes dados.
+- **Cronologia de erros:** destaca as primeiras linhas suspeitas pela ordem do ficheiro, preservando o texto original.
+- **Atualizações verificadas da base de diagnósticos:** procura manualmente uma base mais recente, valida o SHA-256 e o esquema JSON, guarda uma cópia anterior e permite reverter. Só transfere regras; nunca envia logs.
+- **Relatórios para a comunidade:** incluem a versão da base e um modelo opcional para indicar se os passos foram testados e se resolveram o problema.
 - **Sinaliza erros ainda desconhecidos:** se encontra termos associados a erros/crashes sem regra correspondente, pode mostrá-los para análise posterior.
 - **Exporta relatórios:** permite guardar um relatório para partilhar com a comunidade. A opção de anonimização oculta endereços IP e formatos comuns de caminhos de utilizador.
+- **Respeita o idioma escolhido:** os relatórios são gerados em português ou inglês conforme o idioma da interface; a evidência original dos logs é mantida sem alterações.
 - **Inclui português e inglês**, bem como temas claro e escuro com preferência guardada localmente.
 - **Oferece algumas renomeações locais reversíveis:** apenas para cenários de nomes de ficheiros `.ffpfs`/`.ffpfsc previstos pela aplicação. A ação muda o nome do ficheiro no PC; não altera o seu conteúdo nem escreve diretamente na PS5.
 
@@ -60,6 +67,13 @@ A integração usa a API do ShadowMountPlus, incluindo `/api/v1/version`, `/api/
 - A confiança é uma estimativa baseada na regra e na evidência disponível, não uma garantia estatística.
 - Um resultado com baixa confiança ou não classificado precisa de contexto: log completo, firmware, versões e a ação exata que causou o problema.
 - As sugestões são apresentadas para avaliação pelo utilizador. O programa não altera a PS5 através da API.
+
+
+## Atualizar a base de diagnósticos
+
+Em **Mais opções → Atualizar base de diagnósticos**, a aplicação procura uma versão mais recente. Depois de confirmares, transfere apenas `knowledge_base.json` deste repositório, valida o SHA-256 indicado em `updates.json`, verifica o esquema e as traduções inglesas e guarda a nova base na pasta de dados do utilizador. A versão anterior fica guardada localmente e pode ser restaurada em **Mais opções → Reverter atualização da base**. O executável não é atualizado automaticamente e nenhum log, relatório ou endereço da consola é enviado.
+
+O ficheiro `updates.json` tem de ser publicado em conjunto com a versão correspondente de `knowledge_base.json` no ramo principal. Se estes ficheiros ainda não estiverem publicados, a atualização não estará disponível através da aplicação.
 
 ## Privacidade e segurança
 
@@ -105,6 +119,10 @@ O ficheiro resultante é criado em `dist\PS5JailbreakDoctor.exe`. Para publicaç
 | `knowledge_base.json` | Base local de padrões de erro, com fontes e recomendações |
 | `safe_actions.py` | Conjunto limitado de renomeações locais reversíveis |
 | `i18n.py` | Textos da interface em português e inglês |
+| `updates.py` / `updates.json` | Atualizações explícitas da base com verificação SHA-256 |
+| `UPDATES.md` | Guia para publicar atualizações da base de diagnósticos |
+| `tests/` | Testes de regressão para traduções, diagnósticos e atualizações |
+| `CHANGELOG.md` | Alterações do projeto organizadas por versão |
 | `.github/workflows/build-windows-exe.yml` | Compilação do EXE para Windows x64 |
 | `FONTES_PT.md` | Referências públicas usadas nas regras da base de conhecimento |
 

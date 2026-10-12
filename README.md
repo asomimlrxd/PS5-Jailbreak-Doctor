@@ -35,8 +35,14 @@ It is a **diagnostic assistant, not a jailbreak or exploit**. It does not instal
 - **ShadowMountPlus integration:** optionally retrieves the version information, `debug.log`, and kernel log through the tool's HTTP API on the local network.
 - **Context-aware findings:** optional firmware, ShadowMountPlus and KStuff Lite versions, storage location, image/folder format, and the moment the issue started can affect a rule's relevance.
 - **Evidence first:** findings show the matching evidence, confidence estimate, source status, limits, and recommended next checks.
+- **Context-specific compatibility notes:** exact combinations of firmware, ShadowMountPlus/KStuff Lite versions, source type, and trigger can surface separately from log-matched diagnoses. A note is not proof that the error occurred.
+- **Read-only scanner inspection:** queries custom scan roots and `manual.lst` sources through supported API endpoints. It does not start a rescan or change settings; older API builds may not expose this information.
+- **Error timeline:** highlights the first suspicious log lines in file order without rewriting the original evidence.
+- **Verified diagnostic database updates:** manually check for a newer knowledge base, verify its SHA-256 and schema, keep a backup, and roll back locally if needed. Only diagnostic JSON is downloaded; logs are never uploaded.
+- **Community-ready reports:** export includes source/database version information and an optional follow-up template for whether a suggested step was tested and worked.
 - **Unclassified error lines:** when a log contains likely error/crash wording that has no matching rule, the app can surface it for review instead of silently treating the log as clean.
 - **Shareable reports:** export the diagnostic report, with common IP addresses and user-folder paths redacted when anonymization is enabled.
+- **Language-aware reports:** exported reports follow the selected interface language; original log evidence is preserved verbatim.
 - **Portuguese and English UI:** change the interface language from the top bar.
 - **Light and dark themes:** the selected theme is saved locally.
 - **Optional reversible local filename tests:** only for the specific `.ffpfs` / `.ffpfsc` filename scenarios supported by the app. These actions rename a file on the Windows PC; they do not edit its contents or directly modify the PS5.
@@ -45,7 +51,7 @@ It is a **diagnostic assistant, not a jailbreak or exploit**. It does not instal
 
 ![PS5 Jailbreak Doctor data flow](./docs/images/data-flow.png)
 
-The app can analyze imported logs without any network connection. To fetch logs automatically, the PS5 and PC must be on the same trusted local network and the ShadowMountPlus API must be configured to accept the connection. API requests are made only when you press a connection or log-fetch button.
+The app can analyze imported logs without any network connection. To fetch logs automatically or inspect scanner settings, the PS5 and PC must be on the same trusted local network and the ShadowMountPlus API must be configured to accept the connection. API requests are made only when you press a connection, scanner-inspection, or log-fetch button. Scanner inspection uses read-only endpoints and does not trigger a rescan.
 
 ![ShadowMountPlus connection panel](./docs/images/connection-panel.png)
 
@@ -76,6 +82,12 @@ If there is no published Release yet, see [Building the Windows executable](#bui
 - **Confidence is an estimate.** It reflects the available rule/evidence and is not a statistical guarantee.
 - **A low-confidence or unclassified result needs more context.** Include the full log, relevant firmware/tool versions, and the exact action that triggered the problem.
 - **Fixes are not automatic.** The app provides recommendations for the user to review. It does not write changes to the PS5 through the API.
+
+## Updating diagnostic knowledge
+
+Open **More options → Update diagnostic database** to check for a newer knowledge base. The app downloads only `knowledge_base.json` from this repository after you confirm, checks the SHA-256 listed in `updates.json`, validates the schema and English translations, and stores the new database in your per-user app-data folder. The previous database is backed up locally and can be restored through **More options → Restore previous diagnostic database**. This does not update the executable. No log, report, console address, or personal data is sent by the update check.
+
+The update manifest must be published alongside the matching `knowledge_base.json` file on the default branch. If those files are not yet published, the updater will not find the new manifest.
 
 ## Privacy and safety
 
@@ -116,7 +128,11 @@ py -3.12 app.py
 - `doctor_core.py` — diagnostic engine, evidence handling, and report generation.
 - `knowledge_base.json` — editable local error-pattern database.
 - `safe_actions.py` — the small set of optional reversible local filename actions.
-- `i18n.py` — Portuguese and English interface strings.
+- `i18n.py` — Portuguese and English interface strings, including translations embedded in updateable rules.
+- `updates.py` and `updates.json` — explicit, checksum-validated diagnostic knowledge-base updates; the app executable is not silently updated.
+- `CHANGELOG.md` — user-facing project changes by version.
+- `tests/` — regression tests for localization, diagnosis, compatibility notes, and update validation.
+- `UPDATES.md` — maintainer instructions for publishing database updates.
 - `.github/workflows/build-windows-exe.yml` — Windows x64 packaging workflow.
 - `FONTES_PT.md` — public references used for knowledge-base rules.
 
