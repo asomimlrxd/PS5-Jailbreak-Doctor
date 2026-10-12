@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">PS5 Jailbreak Doctor</title>
+  <desc id="desc">A desktop tool for diagnosing PS5 homebrew issues from local logs.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10171b"/><stop offset="1" stop-color="#192620"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9ac6ad"/><stop offset="1" stop-color="#548a70"/></linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="26"/></filter>
+  </defs>
+  <rect width="1200" height="320" rx="24" fill="url(#bg)"/>
+  <circle cx="1030" cy="100" r="135" fill="#4f8067" opacity=".22" filter="url(#soft)"/>
+  <circle cx="1070" cy="270" r="120" fill="#91bba2" opacity=".09" filter="url(#soft)"/>
+  <g transform="translate(72 80)">
+    <rect x="0" y="0" width="118" height="118" rx="28" fill="#263b30" stroke="#68977b" stroke-width="2"/>
+    <circle cx="51" cy="48" r="25" fill="none" stroke="url(#accent)" stroke-width="8"/>
+    <path d="M69 67 L94 92" stroke="url(#accent)" stroke-width="9" stroke-linecap="round"/>
+    <path d="M36 49 L47 60 L67 37" fill="none" stroke="#e7f2eb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="228" y="128" font-family="Segoe UI, Arial, sans-serif" font-size="45" font-weight="700" fill="#f1f5f2">PS5 Jailbreak Doctor</text>
+  <text x="231" y="174" font-family="Segoe UI, Arial, sans-serif" font-size="21" fill="#b8c9bf">Understand the error. Check the evidence. Choose a safer next step.</text>
+  <g transform="translate(231 218)" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600">
+    <rect width="134" height="34" rx="17" fill="#263b30" stroke="#527c64"/><text x="67" y="22" text-anchor="middle" fill="#dcebe1">LOCAL ANALYSIS</text>
+    <rect x="148" width="156" height="34" rx="17" fill="#263b30" stroke="#527c64"/><text x="226" y="22" text-anchor="middle" fill="#dcebe1">READ-ONLY API</text>
+    <rect x="318" width="155" height="34" rx="17" fill="#263b30" stroke="#527c64"/><text x="395" y="22" text-anchor="middle" fill="#dcebe1">PT + EN</text>
+  </g>
+  <g transform="translate(910 80)" fill="none" stroke="#90b99f" stroke-width="2" opacity=".52">
+    <rect x="0" y="0" width="208" height="155" rx="14"/>
+    <path d="M21 31 H187 M21 53 H128 M21 75 H164 M21 97 H101" stroke-linecap="round"/>
+    <circle cx="174" cy="118" r="18"/><path d="M165 118 l6 6 12 -14" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

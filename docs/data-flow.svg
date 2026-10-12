@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="350" viewBox="0 0 1200 350" role="img" aria-labelledby="title desc">
+<title id="title">PS5 Jailbreak Doctor diagnostic workflow</title><desc id="desc">Logs are imported from files or read from the ShadowMountPlus API, analyzed locally against the knowledge base, and displayed with evidence and recommended next steps.</desc>
+<defs><linearGradient id="card" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#17211c"/><stop offset="1" stop-color="#202a25"/></linearGradient><marker id="arrow" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#76a889"/></marker></defs>
+<rect width="1200" height="350" rx="20" fill="#0d1110"/>
+<text x="50" y="48" font-family="Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" fill="#f2f5f3">How the diagnosis works</text>
+<g font-family="Segoe UI,Arial,sans-serif">
+<rect x="45" y="82" width="315" height="205" rx="16" fill="url(#card)" stroke="#527960" stroke-width="2"/>
+<circle cx="85" cy="124" r="20" fill="#2e4b39"/><text x="85" y="131" font-size="20" text-anchor="middle" font-weight="700" fill="#e4f0e7">1</text>
+<text x="120" y="129" font-size="20" font-weight="700" fill="#f2f5f3">Collect logs</text>
+<text x="70" y="172" font-size="15" fill="#c2d0c7">• Import .log, .txt or .json</text>
+<text x="70" y="198" font-size="15" fill="#c2d0c7">• Or read recent logs from</text><text x="87" y="220" font-size="15" fill="#c2d0c7">ShadowMountPlus over LAN</text>
+<text x="70" y="260" font-size="13" fill="#8eaa98">No automatic upload</text>
+<path d="M366 184 H411" stroke="#76a889" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="425" y="82" width="350" height="205" rx="16" fill="url(#card)" stroke="#527960" stroke-width="2"/>
+<circle cx="465" cy="124" r="20" fill="#2e4b39"/><text x="465" y="131" font-size="20" text-anchor="middle" font-weight="700" fill="#e4f0e7">2</text>
+<text x="500" y="129" font-size="20" font-weight="700" fill="#f2f5f3">Analyze locally</text>
+<text x="450" y="172" font-size="15" fill="#c2d0c7">• Match known log patterns</text>
+<text x="450" y="198" font-size="15" fill="#c2d0c7">• Compare optional context</text>
+<text x="450" y="224" font-size="15" fill="#c2d0c7">• Estimate confidence and evidence</text>
+<text x="450" y="260" font-size="13" fill="#8eaa98">Knowledge base is editable JSON</text>
+<path d="M781 184 H826" stroke="#76a889" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="840" y="82" width="315" height="205" rx="16" fill="url(#card)" stroke="#527960" stroke-width="2"/>
+<circle cx="880" cy="124" r="20" fill="#2e4b39"/><text x="880" y="131" font-size="20" text-anchor="middle" font-weight="700" fill="#e4f0e7">3</text>
+<text x="915" y="129" font-size="20" font-weight="700" fill="#f2f5f3">Review next steps</text>
+<text x="865" y="172" font-size="15" fill="#c2d0c7">• See matched log lines</text>
+<text x="865" y="198" font-size="15" fill="#c2d0c7">• Review safe suggestions</text>
+<text x="865" y="224" font-size="15" fill="#c2d0c7">• Export a report to share</text>
+<text x="865" y="260" font-size="13" fill="#8eaa98">The console is not modified</text>
+</g></svg>
