@@ -1,4 +1,4 @@
-# PS5 Homebrew Doctor v0.7.1 — criar EXE sem Python instalado no teu PC
+# PS5 Homebrew Doctor v0.7.2 — criar EXE sem Python instalado no teu PC
 
 Este pacote usa o GitHub Actions para compilar a aplicação num computador Windows temporário na cloud. **Não precisas de instalar Python nem PyInstaller no teu computador.** O resultado para uso diário é um único ficheiro `PS5HomebrewDoctor.exe`.
 
@@ -26,7 +26,7 @@ A documentação oficial do GitHub confirma que os ficheiros podem ser enviados 
 - Confirma que o ficheiro `.github/workflows/build-windows-exe.yml` foi enviado e está no caminho exato indicado.
 - Abre **Actions** e confirma se a execução está à espera de aprovação ou se está desativada.
 - Se não aparecer uma execução, abre **Actions → Build PS5 Homebrew Doctor EXE → Run workflow** (quando essa opção estiver disponível).
-- Se a compilação falhar, abre a execução e envia-me o texto do passo que ficou a vermelho.
+- Se a compilação falhar, abre a execução e envia-me o texto do passo que ficou a vermelho. A versão 0.7.2 usa o caminho absoluto de `knowledge_base.json`, evitando o erro em que o PyInstaller procurava o ficheiro dentro de `build`.
 
 ## Notas de segurança e privacidade
 

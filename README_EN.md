@@ -1,4 +1,4 @@
-# PS5 Homebrew Doctor v0.7.1 — build a single EXE without local Python
+# PS5 Homebrew Doctor v0.7.2 — build a single EXE without local Python
 
 This package uses GitHub Actions to build the app on a temporary Windows runner. You do **not** need Python or PyInstaller installed on your PC. The daily-use result is one file: `PS5HomebrewDoctor.exe`.
 
