@@ -1,44 +1,119 @@
-# PS5 Homebrew Doctor v0.7.5 — EXE pronto para distribuir
+# PS5 Jailbreak Doctor
 
-Esta versão prepara o projeto para publicar um único executável Windows (`PS5HomebrewDoctor.exe`) nas **GitHub Releases**. Quem descarrega o programa não precisa de instalar Python, usar ficheiros `.bat` nem obter os ficheiros-fonte.
+**O PS5 Jailbreak Doctor é uma aplicação de diagnóstico para Windows destinada à comunidade de homebrew da PS5.** Analisa logs, procura padrões de erro conhecidos associados a ferramentas como ShadowMountPlus e KStuff Lite, apresenta a evidência encontrada e sugere verificações seguintes.
 
-## Porque falhava a compilação anterior?
+> **Importante:** é um assistente de diagnóstico, não um jailbreak nem um exploit. Não instala payloads, não altera o firmware, não instala jogos e não aplica correções automaticamente na consola.
 
-O erro `Unable to find ... build\knowledge_base.json` vem de um ficheiro `.spec` antigo que guardava o caminho da base de conhecimento relativamente à pasta de build. O workflow desta versão **não utiliza `PS5HomebrewDoctor.spec`**: gera um spec temporário fora do repositório e passa o caminho absoluto para `knowledge_base.json`. Assim evita herdar os caminhos antigos.
+[README principal do GitHub](README.md) · [English](README_EN.md)
 
-## Atualizar o repositório
+![Resultados de diagnóstico com dados de exemplo](docs/images/diagnostic-results.png)
 
-1. Descarrega e extrai este ZIP.
-2. Copia os ficheiros desta pasta para a raiz do teu repositório GitHub, incluindo a pasta `.github`.
-3. Substitui o workflow anterior por `.github/workflows/build-windows-exe.yml`. Remove workflows antigos que ainda chamem `PS5HomebrewDoctor.spec` ou usem `build\knowledge_base.json`.
-4. Confirma que `app.py`, `app_paths.py`, `doctor_core.py`, `i18n.py`, `safe_actions.py`, `session_utils.py` e `knowledge_base.json` ficam na raiz do repositório.
-5. Faz commit e push para `main` ou `master`.
+*Captura ilustrativa da vista de resultados com dados de exemplo — não significa que estes erros estejam presentes em todas as consolas.*
 
-## Testar uma compilação
+## O que faz
 
-1. No GitHub, abre **Actions** e seleciona **Build and publish PS5 Homebrew Doctor**.
-2. Abre a execução mais recente e aguarda que termine com sucesso.
-3. Em **Artifacts**, descarrega `PS5HomebrewDoctor-Windows-x64` e extrai-o. O ZIP contém o `.exe` e o seu SHA-256.
+- **Analisa ficheiros de logs:** permite importar ficheiros `.log`, `.txt` e `.json` para análise local.
+- **Obtém logs da PS5:** opcionalmente, liga-se à API HTTP do ShadowMountPlus na rede local para consultar a versão e obter o `debug.log` e o kernel log.
+- **Deteta padrões conhecidos:** compara as linhas encontradas com uma base de conhecimento local em `knowledge_base.json`, que pode ser ampliada por contribuidores.
+- **Usa contexto adicional:** firmware, versões do ShadowMountPlus e KStuff Lite, localização do jogo (USB/SSD interno), formato (pasta/imagem) e o momento em que o erro começou podem ajudar a avaliar a relevância de uma regra.
+- **Explica cada resultado:** mostra evidências, confiança estimada, estado da fonte, limitações e passos sugeridos.
+- **Sinaliza erros ainda desconhecidos:** se encontra termos associados a erros/crashes sem regra correspondente, pode mostrá-los para análise posterior.
+- **Exporta relatórios:** permite guardar um relatório para partilhar com a comunidade. A opção de anonimização oculta endereços IP e formatos comuns de caminhos de utilizador.
+- **Inclui português e inglês**, bem como temas claro e escuro com preferência guardada localmente.
+- **Oferece algumas renomeações locais reversíveis:** apenas para cenários de nomes de ficheiros `.ffpfs`/`.ffpfsc previstos pela aplicação. A ação muda o nome do ficheiro no PC; não altera o seu conteúdo nem escreve diretamente na PS5.
 
-O artifact de Actions é temporário (30 dias). Para uma ligação de download estável e pública, usa o processo de Release abaixo.
+## Como funciona
 
-## Publicar o EXE para toda a comunidade
+![Fluxo de diagnóstico](docs/images/data-flow.svg)
 
-1. No GitHub, abre **Releases** → **Draft a new release**.
-2. Cria uma nova tag, por exemplo `v0.7.5`, apontando para o commit que queres distribuir.
-3. Escreve um título como `PS5 Homebrew Doctor v0.7.5` e publica a Release.
-4. O workflow compila o programa num runner Windows e anexa automaticamente `PS5HomebrewDoctor.exe` e `PS5HomebrewDoctor.exe.sha256` a essa Release.
-5. Na página da Release, a comunidade descarrega apenas `PS5HomebrewDoctor.exe`. Não precisa de Python, `.bat` nem ficheiros-fonte.
+A análise de logs importados funciona localmente e não exige ligação à consola. Para obter logs automaticamente, o PC e a PS5 têm de estar na mesma rede local de confiança e a API do ShadowMountPlus tem de aceitar ligações pela rede.
 
-## Notas importantes
+![Painel de ligação ao ShadowMountPlus](docs/images/connection-panel.png)
 
-- A compilação Windows ocorre em GitHub Actions; o PC do utilizador final não compila nada.
-- O executável não tem assinatura comercial, por isso o Windows SmartScreen pode mostrar um aviso.
-- Mantém a API do ShadowMountPlus limitada a uma rede local de confiança; não a exponhas à Internet.
-- Os dados mutáveis (configuração e histórico) são guardados na pasta de utilizador da aplicação, não dentro do executável temporário.
+*A captura original foi editada para substituir o endereço IP privado por um marcador.*
 
-## Documentação oficial
+## Utilização rápida
 
-- PyInstaller — inclusão de ficheiros de dados: https://pyinstaller.org/en/stable/spec-files.html
-- GitHub Actions — guardar e descarregar artifacts: https://docs.github.com/en/actions/tutorials/store-and-share-data
-- GitHub Actions — permissões e workflows: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+### Analisar logs que já tens no PC
+
+1. Abre o programa.
+2. Escolhe **Importar logs** e seleciona um ou mais ficheiros suportados.
+3. Clica em **Analisar logs**.
+4. Abre cada resultado para ver as linhas encontradas, as limitações e os próximos passos.
+5. Guarda um relatório para o partilhares num tópico ou com os mantenedores da ferramenta relevante.
+
+### Obter logs diretamente da PS5
+
+1. Inicia o ShadowMountPlus na consola e confirma que a API está ativa.
+2. Se a tua versão o exigir, configura a API para aceitar ligações através de uma interface de rede local, em vez de apenas `127.0.0.1`.
+3. No separador de ligação, indica o IP LAN atual da PS5 e a porta da API. A aplicação usa `10101` por defeito, mas a configuração pode ser diferente.
+4. Clica em **Testar ligação**. Quando a aplicação confirmar a ligação, escolhe **Obter logs e analisar**.
+5. Consulta os resultados e exporta um relatório se precisares de ajuda.
+
+### Segurança da ligação
+
+A integração usa a API do ShadowMountPlus, incluindo `/api/v1/version`, `/api/v1/debug-log` e `/api/v1/kernel-log`. A API não tem autenticação na integração suportada. Mantém-na limitada a uma rede local de confiança, nunca encaminhes a porta no router e não a exponhas à Internet. A aplicação não configura a API pela tua conta.
+
+## Como interpretar os resultados
+
+- Um padrão reconhecido é **uma pista**, não uma prova definitiva da causa.
+- A confiança é uma estimativa baseada na regra e na evidência disponível, não uma garantia estatística.
+- Um resultado com baixa confiança ou não classificado precisa de contexto: log completo, firmware, versões e a ação exata que causou o problema.
+- As sugestões são apresentadas para avaliação pelo utilizador. O programa não altera a PS5 através da API.
+
+## Privacidade e segurança
+
+- Por defeito, os logs são analisados localmente; não são enviados automaticamente para um servidor do projeto.
+- A ligação à consola só acontece quando carregas num botão de ligação ou recolha.
+- A anonimização do relatório substitui endereços IP e caminhos comuns de pastas de utilizador. Antes de partilhar, revê o relatório: caminhos personalizados, nomes de utilizador noutros formatos, Title IDs e outros identificadores podem permanecer.
+- A API do ShadowMountPlus não tem autenticação; usa-a apenas numa rede privada de confiança.
+- Antes de executar uma renomeação local, confirma o ficheiro selecionado e guarda cópia de segurança se for importante. A aplicação bloqueia a reversão quando existe um conflito de nome ou o ficheiro foi modificado após a ação.
+
+## Instalar e executar
+
+### Executável Windows
+
+Na página **Releases** do repositório, descarrega `PS5JailbreakDoctor.exe` da versão mais recente. O executável compilado não exige Python nem ficheiros `.bat` no computador do utilizador.
+
+O workflow do GitHub Actions compila o programa para Windows x64 e, quando é publicada uma Release, anexa o executável e o respetivo ficheiro SHA-256. O executável não tem assinatura comercial; o Windows SmartScreen pode mostrar um aviso.
+
+### Executar a partir do código-fonte
+
+Requer Python 3.10 ou posterior. A interface e a análise usam a biblioteca padrão do Python.
+
+```powershell
+py -3.12 app.py
+```
+
+### Compilar o EXE no Windows
+
+Para a compilação documentada, utiliza Python 3.12 e instala o PyInstaller:
+
+```powershell
+py -3.12 -m pip install --upgrade pyinstaller
+py -3.12 -m PyInstaller --noconfirm --clean --onefile --windowed --name PS5JailbreakDoctor --add-data "knowledge_base.json;." app.py
+```
+
+O ficheiro resultante é criado em `dist\PS5JailbreakDoctor.exe`. Para publicações oficiais, recomenda-se o workflow incluído em `.github/workflows/build-windows-exe.yml`, que valida os ficheiros, inclui a base de conhecimento e anexa um checksum SHA-256 à Release.
+
+## Estrutura do projeto
+
+| Ficheiro | Função |
+|---|---|
+| `app.py` | Interface Windows e integração com a API do ShadowMountPlus |
+| `doctor_core.py` | Motor de diagnóstico, evidências e relatórios |
+| `knowledge_base.json` | Base local de padrões de erro, com fontes e recomendações |
+| `safe_actions.py` | Conjunto limitado de renomeações locais reversíveis |
+| `i18n.py` | Textos da interface em português e inglês |
+| `.github/workflows/build-windows-exe.yml` | Compilação do EXE para Windows x64 |
+| `FONTES_PT.md` | Referências públicas usadas nas regras da base de conhecimento |
+
+## Limitações conhecidas
+
+A base de conhecimento não cobre todos os erros possíveis e os relatos comunitários podem ser específicos de uma versão ou firmware. A aplicação não consegue garantir que uma sugestão resolva o problema. Confirma sempre as fontes originais e verifica a compatibilidade antes de alterar ficheiros ou configurações.
+
+## Licença e aviso legal
+
+O projeto é distribuído ao abrigo da licença MIT; consulta [`LICENSE.txt`](LICENSE.txt).
+
+Este é um projeto comunitário experimental. Não é afiliado, patrocinado ou apoiado pela Sony Interactive Entertainment, PlayStation, etaHEN, ShadowMountPlus ou pelos responsáveis do KStuff Lite. As marcas pertencem aos respetivos proprietários. Utiliza o programa por tua conta e risco.

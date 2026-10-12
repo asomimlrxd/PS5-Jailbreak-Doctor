@@ -5,3 +5,8 @@ __pycache__/
 *.spec
 .env/
 .venv/
+venv/
+settings.json
+resolution_history.json
+changes_journal.json
+*.log

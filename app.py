@@ -193,7 +193,7 @@ class DoctorApp(tk.Tk):
         if self.theme_name not in THEMES:
             self.theme_name = DEFAULT_THEME
         _set_palette(self.theme_name)
-        self.title(f"PS5 Homebrew Doctor v{APP_VERSION}")
+        self.title(f"PS5 Jailbreak Doctor v{APP_VERSION}")
         self.geometry("1120x760")
         self.minsize(920, 620)
         self.configure(bg=BG)
@@ -447,7 +447,7 @@ class DoctorApp(tk.Tk):
         header.pack(fill="x")
         left = ttk.Frame(header)
         left.pack(side="left", fill="x", expand=True)
-        ttk.Label(left, text="PS5 Homebrew Doctor", style="Title.TLabel").pack(anchor="w")
+        ttk.Label(left, text="PS5 Jailbreak Doctor", style="Title.TLabel").pack(anchor="w")
         ttk.Label(left, text="Ajuda a perceber erros em homebrew da PS5.", style="Sub.TLabel").pack(anchor="w", pady=(3, 0))
         right = ttk.Frame(header)
         right.pack(side="right", anchor="n")

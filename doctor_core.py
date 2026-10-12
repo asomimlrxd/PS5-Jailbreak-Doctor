@@ -282,7 +282,7 @@ def make_markdown_report(text: str, findings: Iterable[Finding], anonymize: bool
     evidence_transform = redact if anonymize else (lambda x: x)
     metadata = extract_metadata(text)
     lines = [
-        "# PS5 Homebrew Doctor — Relatório de diagnóstico",
+        "# PS5 Jailbreak Doctor — Relatório de diagnóstico",
         "",
         f"- Versão da ferramenta: {APP_VERSION}",
         f"- Base de conhecimento: {KNOWLEDGE_BASE.get('database_version', 'desconhecida')} ({len(RULES)} regras locais)",

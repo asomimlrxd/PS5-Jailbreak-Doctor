@@ -1,4 +1,4 @@
-# Fontes da base de conhecimento — PS5 Homebrew Doctor v0.5.0
+# Fontes da base de conhecimento — PS5 Jailbreak Doctor
 
 Revisão feita em 12-10-2026. A base contém erros documentados publicamente e heurísticas de log (29 regras nesta revisão). O repositório de issues muda com frequência; esta lista não significa que todos os casos continuem presentes nas versões mais recentes.
 
