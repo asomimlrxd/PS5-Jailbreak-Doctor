@@ -13,8 +13,6 @@ Read logs, identify known error patterns, review evidence, and decide what to ch
   <img alt="Analysis" src="https://img.shields.io/badge/analysis-local-425f50">
 </p>
 
-> **If an image appears broken on GitHub:** make sure the whole `docs/images/` folder (including the `.png` files) is committed and pushed to the same branch as this README. Files present only on your PC will not be shown on the GitHub page.
-
 ## What is it?
 
 **PS5 Jailbreak Doctor** helps troubleshoot problems reported by PS5 homebrew tools, especially log patterns associated with ShadowMountPlus and KStuff Lite. It is designed for both beginners and experienced users: import a log or read the latest logs from a PS5 on your local network, run the analysis, and open a finding to see the matched evidence and suggested next steps.
