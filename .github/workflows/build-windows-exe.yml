@@ -1,4 +1,4 @@
-name: Build and publish PS5 Homebrew Doctor
+name: Build and publish PS5 Jailbreak Doctor
 
 on:
   push:
@@ -68,7 +68,7 @@ jobs:
           $root = (Resolve-Path ".").Path
           $dist = Join-Path $root "dist"
           $work = Join-Path $root "build"
-          $specTemp = Join-Path $env:RUNNER_TEMP "PS5HomebrewDoctor-spec"
+          $specTemp = Join-Path $env:RUNNER_TEMP "PS5JailbreakDoctor-spec"
           if (Test-Path -LiteralPath $specTemp) { Remove-Item -LiteralPath $specTemp -Recurse -Force }
           New-Item -ItemType Directory -Path $specTemp | Out-Null
           $app = Join-Path $root "app.py"
@@ -84,35 +84,35 @@ jobs:
             --clean `
             --onefile `
             --windowed `
-            --name PS5HomebrewDoctor `
+            --name PS5JailbreakDoctor `
             --distpath $dist `
             --workpath $work `
             --specpath $specTemp `
             --add-data "$db;." `
             $app
           if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE. See the compiler output above." }
-          $exe = Join-Path $dist "PS5HomebrewDoctor.exe"
+          $exe = Join-Path $dist "PS5JailbreakDoctor.exe"
           if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
             Write-Host "Build output folder contents:"
             Get-ChildItem -LiteralPath $dist -Force | Format-Table Name, Length
             Write-Host "Recent build files:"
             Get-ChildItem -LiteralPath $work -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 80 FullName, Length | Format-Table -AutoSize
-            throw "PyInstaller completed without producing dist\\PS5HomebrewDoctor.exe. See the output above."
+            throw "PyInstaller completed without producing dist\\PS5JailbreakDoctor.exe. See the output above."
           }
           $size = (Get-Item -LiteralPath $exe).Length
           if ($size -lt 5000000) { throw "The EXE is unexpectedly small ($size bytes); refusing to publish an incomplete build." }
           $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          Set-Content -LiteralPath "$exe.sha256" -Value "$hash  PS5HomebrewDoctor.exe" -Encoding ascii
+          Set-Content -LiteralPath "$exe.sha256" -Value "$hash  PS5JailbreakDoctor.exe" -Encoding ascii
           Write-Host "SUCCESS: $exe ($size bytes)"
           Write-Host "SHA256: $hash"
 
       - name: Upload build artifact for testing
         uses: actions/upload-artifact@v4
         with:
-          name: PS5HomebrewDoctor-Windows-x64
+          name: PS5JailbreakDoctor-Windows-x64
           path: |
-            dist/PS5HomebrewDoctor.exe
-            dist/PS5HomebrewDoctor.exe.sha256
+            dist/PS5JailbreakDoctor.exe
+            dist/PS5JailbreakDoctor.exe.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -126,8 +126,8 @@ jobs:
           $ErrorActionPreference = "Stop"
           if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) { throw "Release tag could not be resolved." }
           gh release upload $env:RELEASE_TAG `
-            "dist/PS5HomebrewDoctor.exe" `
-            "dist/PS5HomebrewDoctor.exe.sha256" `
+            "dist/PS5JailbreakDoctor.exe" `
+            "dist/PS5JailbreakDoctor.exe.sha256" `
             --clobber
           if ($LASTEXITCODE -ne 0) { throw "Could not attach the EXE to release $env:RELEASE_TAG." }
           Write-Host "Attached Windows EXE to release $env:RELEASE_TAG."
