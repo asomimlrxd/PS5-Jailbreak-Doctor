@@ -22,9 +22,6 @@ KNOWLEDGE_BASE = PROJECT_ROOT / "knowledge_base.json"
 
 # Passing absolute resource paths prevents PyInstaller resolving them under build/.
 datas = [(str(KNOWLEDGE_BASE), ".")]
-RELAY_ELF = PROJECT_ROOT / "ps5-relay" / "build" / "PS5JailbreakDoctorRelay.elf"
-if RELAY_ELF.is_file():
-    datas.append((str(RELAY_ELF), "payloads"))
 
 a = Analysis(
     [str(ENTRY_SCRIPT)],
