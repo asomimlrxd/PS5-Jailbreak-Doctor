@@ -1,1 +1,83 @@
+name: Validate PS5 Jailbreak Doctor
 
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate source and diagnostic database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile Python source
+        run: python -m compileall -q app.py app_paths.py doctor_core.py i18n.py safe_actions.py session_utils.py updates.py
+
+      - name: Validate knowledge database and update manifest
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          raw = Path("knowledge_base.json").read_bytes()
+          database = json.loads(raw.decode("utf-8"))
+          manifest = json.loads(Path("updates.json").read_text(encoding="utf-8"))
+
+          assert database.get("schema_version") == 1, "Unsupported knowledge database schema"
+          rules = database.get("rules")
+          assert isinstance(rules, list) and rules, "Knowledge database contains no rules"
+
+          rule_ids = set()
+          for rule in rules:
+              rule_id = str(rule.get("id", "")).strip()
+              assert rule_id and rule_id not in rule_ids, f"Missing/duplicate rule ID: {rule_id}"
+              rule_ids.add(rule_id)
+              assert isinstance(rule.get("patterns"), list) and rule["patterns"], f"{rule_id}: missing patterns"
+              for pattern in rule["patterns"]:
+                  re.compile(pattern)
+
+              en = (rule.get("translations") or {}).get("en") or {}
+              for field in ("title", "summary", "fix_summary", "applicability"):
+                  if rule.get(field):
+                      assert str(en.get(field, "")).strip(), f"{rule_id}: missing English translation for {field}"
+              steps = rule.get("steps", [])
+              en_steps = en.get("steps", [])
+              assert isinstance(en_steps, list) and len(en_steps) == len(steps), f"{rule_id}: English step count mismatch"
+              assert all(isinstance(step, str) and step.strip() for step in en_steps), f"{rule_id}: empty English step"
+
+          matrix = database.get("compatibility_matrix", [])
+          matrix_ids = set()
+          for entry in matrix:
+              entry_id = str(entry.get("id", "")).strip()
+              assert entry_id and entry_id not in matrix_ids, f"Missing/duplicate compatibility ID: {entry_id}"
+              matrix_ids.add(entry_id)
+              assert isinstance(entry.get("conditions"), dict) and entry["conditions"], f"{entry_id}: missing conditions"
+              en = (entry.get("translations") or {}).get("en") or {}
+              for field in ("title", "summary", "status"):
+                  if entry.get(field):
+                      assert str(en.get(field, "")).strip(), f"{entry_id}: missing English translation for {field}"
+
+          meta = manifest.get("knowledge_base", {})
+          assert manifest.get("manifest_version") == 1, "Unsupported updates.json format"
+          assert meta.get("database_version") == database.get("database_version"), "Manifest/database version mismatch"
+          expected_url = "https://raw.githubusercontent.com/asomimlrxd/PS5-Jailbreak-Doctor/main/knowledge_base.json"
+          assert meta.get("url") == expected_url, "Manifest points outside the expected knowledge database URL"
+          actual_digest = hashlib.sha256(raw).hexdigest()
+          assert meta.get("sha256") == actual_digest, "updates.json SHA-256 does not match knowledge_base.json"
+
+          print(f"Validated {len(rules)} rules, {len(matrix)} compatibility notes, and matching manifest SHA-256.")
