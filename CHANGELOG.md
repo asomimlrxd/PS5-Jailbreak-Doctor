@@ -1,26 +1,31 @@
 # Changelog
 
-## 0.2.0 — Downloads & sources
+## 1.02 — Release maintenance
 
-- Added a Downloads & Sources tab for the community-maintained `homebrew.page` catalogue.
-- Added project/release links for Orbit Store, Spectrum Library and PS5Library.
-- Added a local GitHub-release source manager with a user authorization acknowledgement.
-- Added a local download queue for homebrew artifacts with published SHA-256, progress display, cancellation, pause/resume when HTTP Range is supported, and checksum verification before the save action.
-- Added manual provider bookmarks. Vikingfile opens externally; the app does not scrape or bypass provider checks.
-- Added verification of the homebrew.page Ed25519-signed manifest, SHA-256 checks for the signed index and per-app JSON, and a local anti-rollback sequence check.
-- Added lazy-loaded per-app details sourced from signed JSON records, including description, licence, release notes, source repository and official release link.
-- Added local export/import for queue and custom sources.
-- Kept commercial game dumps and unauthorized game-download catalogs out of the app.
+- Align the in-app version with the next release label (`1.02`).
+- Standardize the Windows executable and checksum filename as `PS5JailbreakDoctor.exe`.
+- Remove the abandoned optional ELF relay from the PyInstaller spec; the project uses the original ShadowMountPlus HTTP API integration.
+- Replace the empty GitHub Actions workflow with CI checks for Python syntax, diagnostic rule patterns, English translations, compatibility notes, and the update-manifest SHA-256.
 
-### Limitations
 
-- The live catalogue and GitHub release lookups require an internet connection and may be blocked by browser CORS or rate limits.
-- Browser-based downloads are limited to 120 MB per artifact and are verified in memory. If direct browser fetching fails, use the official release page.
-- Custom sources are stored locally and are not submitted to the public Atlas.
+## 0.8.0 — 2026-10-12
 
-## 0.1.0 — Initial compatibility atlas
+### Added
+- Context-specific compatibility notes for documented firmware/tool/source combinations.
+- Chronological timeline of suspicious log lines, retaining original log evidence unchanged.
+- Pre-flight checks when context is incomplete or logs point to scanner/source-layout issues.
+- Optional read-only scanner inspection via `/api/v1/settings` and `/api/v1/manual/list`, with graceful fallback when a console API version does not expose these endpoints.
+- Duplicate Title ID diagnosis with a warning not to assume file corruption.
+- Explicit diagnostic knowledge-base updater using `updates.json`, SHA-256 validation, schema/translation checks, local backup, and rollback.
+- Community-friendly report follow-up fields for recording whether a suggestion was tested and worked.
+- Regression coverage for localization, timeline extraction, compatibility matching, scanner response parsing, pre-flight checks, and update validation.
 
-- Added 83 curated community observations, 46 distinct title names, 18 public sources and 7 format guides.
-- Added bilingual search and filters for firmware, format, storage and reported state.
-- Added source-linked game report cards and local contribution export.
-- Added JSON/CSV export, responsive layout and dataset validation tests.
+### Updated
+- Reflected the maintainer code fix linked to ShadowMountPlus issues #145 and #147 while noting that the exact released build must still be confirmed.
+- Expanded scanner guidance for `scanpath`, `scan_depth`, `sce_sys/param.json`, and `manual.lst` based on the versioned ShadowMountPlus 1.7 documentation.
+- Marked older reports (including the historical image-cache report) as version-specific rather than universal fixes.
+- Preserved local analysis and explicit user confirmation; the updater downloads only the diagnostic JSON and does not upload logs.
+
+### Validation
+- Python compilation and offline unit tests run locally.
+- Windows executable build and real PS5 integration still require validation through the Windows workflow and a local console.

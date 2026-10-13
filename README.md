@@ -1,87 +1,147 @@
-# PS5 Game Compatibility Atlas
+![PS5 Jailbreak Doctor](./docs/images/banner.png)
 
-**Um atlas comunitário, com fontes, dos resultados reportados na execução de jogos PS5 em configurações homebrew.** O site é bilingue (português de Portugal e inglês), responsivo e funciona sem servidor de aplicação.
+**A Windows desktop diagnostic tool for the PS5 homebrew community.**
 
-> **Nota importante:** esta é a versão inicial de investigação, não uma lista definitiva. Os registos são observações públicas, podem ser contraditórios e não garantem que um jogo funcione noutra consola, firmware, versão ou formato. O projeto não aloja ficheiros. Os downloads na aplicação limitam-se a releases de homebrew e ficheiros com origem e hash publicados. Não agrega nem fornece cópias não autorizadas de jogos comerciais, dumps ou patches.
+Read logs, identify known error patterns, review evidence, and decide what to check next.
 
-## Conteúdo da versão 0.2.0
+[English](README_EN.md) · [Português (Portugal)](README_PT.md)
 
-- 83 registos de teste, relativos a 46 nomes de jogos/títulos.
-- 18 fontes públicas indexadas: documentação do ShadowMountPlus, issues do GitHub e publicações/comentários comunitários.
-- 7 guias de formato, distinguindo a indicação do mantenedor dos resultados observados.
-- Pesquisa por jogo, Title ID, firmware, formato, sintomas e texto do relato.
-- Filtros por firmware, formato, tipo de armazenamento e estado reportado.
-- Resultados separados por configuração, incluindo relatos contraditórios.
-- Ligação à publicação original, âmbito do teste, notas de cautela e qualidade da evidência.
-- Novo separador **Downloads & sources** com o catálogo comunitário de homebrew `homebrew.page`, verificando a assinatura Ed25519 do manifesto e os SHA-256 do índice e das fichas, antes de confiar nesses metadados.
-- Connectores para consultar as últimas releases do Orbit Store, Spectrum Library, PS5Library e repositórios GitHub personalizados.
-- Fila local de downloads com progresso, pausa/retoma quando o host suporta HTTP Range, cancelamento e verificação SHA-256 antes de guardar ficheiros. A transferência só é oferecida quando o catálogo assinado também publica um hash para o artefacto.
-- Fontes personalizadas guardadas apenas no navegador; sites como Vikingfile são abertos manualmente e não são analisados por scraper automático.
-- Importação/exportação das fontes e da fila local.
-- Contribuições guardadas localmente no navegador e exportação voluntária. Não existe backend e nada é enviado automaticamente.
-- Exportação da base de relatos para CSV (inclui links de fonte) ou JSON.
+<p align="center">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2F11-425f50">
+  <img alt="Languages" src="https://img.shields.io/badge/languages-English%20%2B%20Portugu%C3%AAs-425f50">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-425f50">
+  <img alt="Analysis" src="https://img.shields.io/badge/analysis-local-425f50">
+</p>
 
-## Executar localmente
+## What is it?
 
-O site é composto por ficheiros estáticos. Com Python instalado, abre um terminal na pasta do projeto e executa:
+The redesigned dashboard keeps the PS5 connection, diagnostic results, source list, and full logs visible in a single window.
 
-```bash
-python -m http.server 8000
+**PS5 Jailbreak Doctor** helps troubleshoot problems reported by PS5 homebrew tools, especially log patterns associated with ShadowMountPlus and KStuff Lite. It is designed for both beginners and experienced users: import a log or read the latest logs from a PS5 on your local network, run the analysis, and open a finding to see the matched evidence and suggested next steps.
+
+It is a **diagnostic assistant, not a jailbreak or exploit**. It does not install payloads, change firmware, install games, or automatically apply fixes to the console.
+
+## At a glance
+
+| Collect | Analyze | Understand |
+|---|---|---|
+| Import `.log`, `.txt`, or `.json` files, or read supported logs from ShadowMountPlus | Match log patterns against a local knowledge base | Review the evidence, estimated confidence, known limitations, and suggested checks |
+
+![Diagnostic results using sample data](./docs/images/dashboard-en.png)
+
+*Example of the results view. This capture illustrates the interface with sample data; it is not a claim that these errors are present on every console.*
+
+## Features
+
+- **Rule-based log analysis:** checks logs against a locally stored JSON knowledge base containing patterns and references collected from public reports.
+- **ShadowMountPlus integration:** optionally retrieves the version information, `debug.log`, and kernel log through the tool's HTTP API on the local network.
+- **Context-aware findings:** optional firmware, ShadowMountPlus and KStuff Lite versions, storage location, image/folder format, and the moment the issue started can affect a rule's relevance.
+- **Evidence first:** findings show the matching evidence, confidence estimate, source status, limits, and recommended next checks.
+- **Context-specific compatibility notes:** exact combinations of firmware, ShadowMountPlus/KStuff Lite versions, source type, and trigger can surface separately from log-matched diagnoses. A note is not proof that the error occurred.
+- **Read-only scanner inspection:** queries custom scan roots and `manual.lst` sources through supported API endpoints. It does not start a rescan or change settings; older API builds may not expose this information.
+- **Error timeline:** highlights the first suspicious log lines in file order without rewriting the original evidence.
+- **Verified diagnostic database updates:** manually check for a newer knowledge base, verify its SHA-256 and schema, keep a backup, and roll back locally if needed. Only diagnostic JSON is downloaded; logs are never uploaded.
+- **Community-ready reports:** export includes source/database version information and an optional follow-up template for whether a suggested step was tested and worked.
+- **Unclassified error lines:** when a log contains likely error/crash wording that has no matching rule, the app can surface it for review instead of silently treating the log as clean.
+- **Shareable reports:** export the diagnostic report, with common IP addresses and user-folder paths redacted when anonymization is enabled.
+- **Language-aware reports:** exported reports follow the selected interface language; original log evidence is preserved verbatim.
+- **Portuguese and English UI:** change the interface language from the top bar.
+- **Light and dark themes:** the selected theme is saved locally.
+- **Optional reversible local filename tests:** only for the specific `.ffpfs` / `.ffpfsc` filename scenarios supported by the app. These actions rename a file on the Windows PC; they do not edit its contents or directly modify the PS5.
+
+## How it works
+
+![PS5 Jailbreak Doctor data flow](./docs/images/data-flow.png)
+
+The app can analyze imported logs without any network connection. To fetch logs automatically or inspect scanner settings, the PS5 and PC must be on the same trusted local network and the ShadowMountPlus API must be configured to accept the connection. API requests are made only when you press a connection, scanner-inspection, or log-fetch button. Scanner inspection uses read-only endpoints and does not trigger a rescan.
+
+![ShadowMountPlus connection panel](./docs/images/connection-panel.png)
+
+*Connection panel example. The console IP shown in the original capture has been replaced with a placeholder.*
+
+## Quick start for Windows users
+
+1. Open the repository's **Releases** page and download `PS5JailbreakDoctor.exe` from the latest release. The source ZIP is for developers and is not the easiest way to run the app.
+2. Run the executable. No Python installation or `.bat` file is required for the compiled release.
+3. Choose **Import logs** to analyze files from your PC, or enter the console's IP address and API port in the connection bar at the top of the window.
+4. Press **Test connection**. When the app confirms the connection, press **Get logs and analyze**.
+5. Open a finding to read the matched lines and the suggested next checks. Export a report when asking the community for help.
+
+If there is no published Release yet, see [Building the Windows executable](#building-the-windows-executable) below.
+
+## Connecting to ShadowMountPlus
+
+- Start ShadowMountPlus on the PS5 and confirm the API is enabled in the version you are running.
+- Configure the API to listen on a trusted LAN interface rather than only on `127.0.0.1`, if the installed build supports this setting.
+- In the app, enter the PS5's current LAN IP and the API port configured on the console. The default port used by the app is `10101`, but your configuration may differ.
+- Test the connection before fetching logs.
+
+**Security note:** the ShadowMountPlus API used here has no authentication in the supported integration. Keep it limited to a trusted private network, never forward the API port from your router, and do not expose it to the public Internet. The app does not configure the PS5 API for you.
+
+## What the results mean
+
+- **A recognized pattern is a lead, not proof.** The same text can appear in different contexts or on different versions.
+- **Confidence is an estimate.** It reflects the available rule/evidence and is not a statistical guarantee.
+- **A low-confidence or unclassified result needs more context.** Include the full log, relevant firmware/tool versions, and the exact action that triggered the problem.
+- **Fixes are not automatic.** The app provides recommendations for the user to review. It does not write changes to the PS5 through the API.
+
+## Updating diagnostic knowledge
+
+Open **More options → Update diagnostic database** to check for a newer knowledge base. The app downloads only `knowledge_base.json` from this repository after you confirm, checks the SHA-256 listed in `updates.json`, validates the schema and English translations, and stores the new database in your per-user app-data folder. The previous database is backed up locally and can be restored through **More options → Restore previous diagnostic database**. This does not update the executable. No log, report, console address, or personal data is sent by the update check.
+
+The update manifest must be published alongside the matching `knowledge_base.json` file on the default branch. If those files are not yet published, the updater will not find the new manifest.
+
+## Privacy and safety
+
+- Logs are analyzed locally by default; the app does not automatically upload them to a project server.
+- Network access is used only for the explicit ShadowMountPlus API actions started by the user.
+- The optional report anonymization replaces common IP addresses and Windows/Linux user-folder paths. Review a report before sharing it because custom paths, usernames in other formats, title IDs, and other identifiers may remain.
+- The API has no authentication. Use it only on a trusted local network.
+- Back up important files before using any local rename test. The app records these changes and blocks rollback if a conflicting original file exists or the renamed file has changed.
+
+## Download or build
+
+### Download the EXE
+
+The GitHub Actions workflow builds a single-file Windows x64 executable when the source is pushed or a workflow is run manually. When a GitHub Release is published, the workflow attaches `PS5JailbreakDoctor.exe` and its SHA-256 file to the release. The EXE is not commercially code-signed, so Windows SmartScreen may show a warning.
+
+### Build from source on Windows
+
+Requires Python 3.12 for the documented build environment and a network connection to install PyInstaller.
+
+```powershell
+py -3.12 -m pip install --upgrade pyinstaller
+py -3.12 -m PyInstaller --noconfirm --clean --onefile --windowed --name PS5JailbreakDoctor --add-data "knowledge_base.json;." app.py
 ```
 
-Depois abre `http://localhost:8000` no navegador. Também podes abrir `index.html` diretamente, mas um servidor local é preferível para persistência das contribuições no navegador.
+The generated executable is created in `dist\PS5JailbreakDoctor.exe`. The maintained GitHub Actions workflow is the recommended release path because it also validates the source files, includes the knowledge base, and attaches a SHA-256 checksum.
 
-## Publicar no GitHub Pages
+### Run from source
 
-1. Cria um repositório GitHub novo para **PS5 Game Compatibility Atlas**.
-2. Carrega todos os ficheiros e pastas deste projeto para a raiz do ramo `main`.
-3. Abre **Settings → Pages**.
-4. Em **Build and deployment**, seleciona **Deploy from a branch**, escolhe `main` e `/ (root)`.
-5. Guarda e espera que o GitHub Pages publique o site.
+Requires Python 3.10 or later. The UI and analysis use Python's standard library.
 
-A interface de compatibilidade funciona sem servidor. O separador de downloads consulta serviços públicos (homebrew.page e GitHub API) apenas quando o utilizador abre o separador/consulta uma release. Não exige chaves de API. A disponibilidade do catálogo depende desses serviços e da política CORS do fornecedor.
-
-## Atualizar os dados
-
-Os dados de origem editáveis estão em `build_data.py`. Para gerar as duas cópias de dados usadas pela aplicação:
-
-```bash
-python build_data.py
+```powershell
+py -3.12 app.py
 ```
 
-Isto atualiza `data/atlas-data.json`, `data/atlas-data.js` e `data/atlas-reports.csv`. O segundo ficheiro permite que a versão estática funcione mesmo quando `index.html` é aberto em contextos `file://` com restrições de `fetch`.
+## Project files
 
-Antes de publicar alterações, executa:
+- `app.py` — desktop UI and ShadowMountPlus API integration.
+- `doctor_core.py` — diagnostic engine, evidence handling, and report generation.
+- `knowledge_base.json` — editable local error-pattern database.
+- `safe_actions.py` — the small set of optional reversible local filename actions.
+- `i18n.py` — Portuguese and English interface strings, including translations embedded in updateable rules.
+- `updates.py` and `updates.json` — explicit, checksum-validated diagnostic knowledge-base updates; the app executable is not silently updated.
+- `CHANGELOG.md` — user-facing project changes by version.
+- `tests/` — regression tests for localization, diagnosis, compatibility notes, and update validation.
+- `UPDATES.md` — maintainer instructions for publishing database updates.
+- `.github/workflows/build-windows-exe.yml` — Windows x64 packaging workflow.
+- `FONTES_PT.md` — public references used for knowledge-base rules.
 
-```bash
-python -m unittest discover -s tests -v
-node --check app.js
-node --check downloads.js
-node tests/downloads-smoke.cjs
-```
+## Scope and disclaimer
 
-Lê `METHODOLOGY.md`, `DOWNLOADS_SOURCES.md` e `CONTRIBUTING.md` antes de acrescentar resultados ou conectores. Não deduzas o firmware, formato, duração ou armazenamento que a fonte não indique. Para os campos em falta, utiliza uma indicação explícita de desconhecido.
+This is community-created, experimental diagnostic software. It is not affiliated with, endorsed by, or supported by Sony Interactive Entertainment, PlayStation, etaHEN, ShadowMountPlus, or the KStuff Lite maintainers. Names belong to their respective owners. Use the tool and any suggested action at your own risk; check original sources and confirm that a recommendation applies to your versions before changing files or settings.
 
-## Estrutura
+## License
 
-| Ficheiro | Finalidade |
-|---|---|
-| `index.html` | Página e estrutura da aplicação |
-| `styles.css` | Interface responsiva e estilos |
-| `app.js` | Pesquisa, filtros, idioma, contribuições locais e exportação |
-| `downloads.js` | Catálogo homebrew, releases GitHub, fila e verificação SHA-256 |
-| `data/atlas-data.json` | Dados curados em formato JSON |
-| `data/atlas-reports.csv` | Registos de teste para abrir numa folha de cálculo, com ligações às fontes |
-| `data/atlas-data.js` | Cópia dos dados para carregamento estático/offline |
-| `build_data.py` | Fonte editável dos registos e guias de formato |
-| `METHODOLOGY.md` | Âmbito, classificação da evidência e limitações |
-| `DOWNLOADS_SOURCES.md` | Conectores, limites da fila e orientações para fontes autorizadas |
-| `RESEARCH_NOTES.md` | Síntese dos principais padrões e resultados contraditórios encontrados |
-| `CONTRIBUTING.md` | Regras para inserir e rever resultados |
-| `tests/test_dataset.py` | Verificações de integridade do dataset |
-
-## Licenças
-
-O código do projeto está sob a licença MIT, em `LICENSE.txt`. Os resumos e metadados editoriais do Atlas são disponibilizados sob CC BY 4.0, com atribuição às fontes públicas originais, conforme `DATA-LICENSE.md`. As fontes e marcas citadas pertencem aos respetivos titulares.
-
-O Atlas é um projeto comunitário independente, sem afiliação ou endosso da Sony Interactive Entertainment, PlayStation ou dos autores das ferramentas referidas.
+Released under the MIT License. See [`LICENSE.txt`](LICENSE.txt).

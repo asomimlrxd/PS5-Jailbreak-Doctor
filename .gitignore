@@ -1,6 +1,13 @@
 __pycache__/
 *.py[cod]
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+/build/
+/dist/
+*.spec
+!PS5JailbreakDoctor.spec
+.env/
+.venv/
+venv/
+settings.json
+resolution_history.json
+changes_journal.json
+*.log
