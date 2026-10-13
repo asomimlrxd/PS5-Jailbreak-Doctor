@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.02 — Release maintenance
+
+- Align the in-app version with the next release label (`1.02`).
+- Standardize the Windows executable and checksum filename as `PS5JailbreakDoctor.exe`.
+- Remove the abandoned optional ELF relay from the PyInstaller spec; the project uses the original ShadowMountPlus HTTP API integration.
+- Replace the empty GitHub Actions workflow with CI checks for Python syntax, diagnostic rule patterns, English translations, compatibility notes, and the update-manifest SHA-256.
+
+
 ## 0.8.0 — 2026-10-12
 
 ### Added
