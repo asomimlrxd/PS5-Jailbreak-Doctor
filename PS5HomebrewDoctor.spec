@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""One-file Windows build with robust project-root/resource discovery."""
+"""One-file PS5 Jailbreak Doctor Windows build with robust project-root/resource discovery."""
 from pathlib import Path
 
 _spec_dir = Path(SPECPATH).resolve()
@@ -43,7 +43,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="PS5HomebrewDoctor",
+    name="PS5JailbreakDoctor",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
