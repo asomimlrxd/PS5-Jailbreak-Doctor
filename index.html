@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101216">
+  <meta name="description" content="PS5 Game Compatibility Atlas — community-reported compatibility results plus official PS5 homebrew sources, checksums and local download queue.">
+  <title>PS5 Game Compatibility Atlas</title>
+  <link rel="icon" href="assets/atlas-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="PS5 Game Compatibility Atlas, início">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="brand-copy">
+          <strong>PS5 Game Compatibility Atlas</strong>
+          <small data-i18n="brandTag">Resultados da comunidade, com fontes</small>
+        </span>
+      </a>
+      <div class="top-actions">
+        <span class="data-stamp"><span class="status-dot"></span><span data-i18n="researchCutoff">Pesquisa até 13 out. 2026</span></span>
+        <button id="languageToggle" class="control-button language-button" type="button" aria-label="Mudar idioma">EN</button>
+        <span class="github-link" title="Projeto independente" data-i18n="atlasCommunity">Atlas comunitário</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="eyebrow">COMMUNITY RESEARCH PROJECT · PREVIEW 0.2.0</span></div>
+          <h1 data-i18n="heroTitle">Descobre o que funciona.<br><span>Vê primeiro a evidência.</span></h1>
+          <p data-i18n="heroText">Pesquisa relatos de jogos PS5 por firmware, formato e armazenamento. Cada resultado mantém a fonte original e distingue testes curtos, problemas por resolver e sessões concluídas.</p>
+          <div class="hero-pills">
+            <span><i class="mini-icon icon-search"></i><span data-i18n="pillSearch">Pesquisa cruzada</span></span>
+            <span><i class="mini-icon icon-source"></i><span data-i18n="pillSources">Fontes originais</span></span>
+            <span><i class="mini-icon icon-community"></i><span data-i18n="pillCommunity">Relatos comunitários</span></span>
+          </div>
+        </div>
+        <div class="hero-side" aria-label="Resumo da base de dados">
+          <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+          <div class="hero-number"><strong id="heroGameCount">—</strong><span data-i18n="gamesTracked">jogos indexados</span></div>
+          <div class="hero-side-bottom"><span class="pulse-dot"></span><span data-i18n="sourceLed">Fontes públicas · Homebrew e downloads verificados</span></div>
+        </div>
+      </section>
+
+      <section class="notice-bar" aria-live="polite">
+        <span class="notice-icon">i</span>
+        <p data-i18n="cautionBanner"><strong>Importante:</strong> estes são resultados reportados, não garantias. Um jogo pode ter resultados diferentes consoante firmware, formato, versão, armazenamento ou integridade da origem.</p>
+        <button id="dismissNotice" class="icon-button" type="button" aria-label="Fechar aviso">×</button>
+      </section>
+
+      <section class="metrics" aria-label="Estatísticas da base">
+        <article class="metric-card"><span class="metric-label" data-i18n="metricGames">JOGOS</span><strong id="metricGames">—</strong><small data-i18n="metricGamesNote">Títulos distintos nos relatos</small></article>
+        <article class="metric-card"><span class="metric-label" data-i18n="metricReports">RELATOS</span><strong id="metricReports">—</strong><small data-i18n="metricReportsNote">Observações com fonte</small></article>
+        <article class="metric-card"><span class="metric-label" data-i18n="metricPlayable">SEM FALHA CRÍTICA REPORTADA</span><strong id="metricPlayable">—</strong><small data-i18n="metricPlayableNote">Inclui testes parciais e problemas menores</small></article>
+        <article class="metric-card"><span class="metric-label" data-i18n="metricFormats">FORMATOS</span><strong id="metricFormats">—</strong><small data-i18n="metricFormatsNote">Guias separados da compatibilidade por jogo</small></article>
+      </section>
+
+      <nav class="main-tabs" aria-label="Navegação principal">
+        <button class="main-tab active" data-tab="games" type="button"><span class="tab-glyph">▦</span><span data-i18n="tabGames">Jogos e relatos</span><b id="tabReportCount">—</b></button>
+        <button class="main-tab" data-tab="formats" type="button"><span class="tab-glyph">◈</span><span data-i18n="tabFormats">Guia de formatos</span></button>
+        <button class="main-tab" data-tab="downloads" type="button"><span class="tab-glyph">⇩</span><span data-i18n="tabDownloads">Downloads & fontes</span><b id="downloadCatalogCount" class="user-count">—</b></button>
+        <button class="main-tab" data-tab="sources" type="button"><span class="tab-glyph">↗</span><span data-i18n="tabSources">Fontes e metodologia</span></button>
+        <button class="main-tab" data-tab="contribute" type="button"><span class="tab-glyph">＋</span><span data-i18n="tabContribute">Adicionar um teste</span><b id="myReportCount" class="user-count">0</b></button>
+      </nav>
+
+      <section id="view-games" class="tab-view active">
+        <div class="section-intro">
+          <div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="indexLabel">ÍNDICE COMUNITÁRIO</span></div><h2 data-i18n="catalogTitle">Resultados de compatibilidade</h2><p data-i18n="catalogIntro">Os resultados estão agrupados por jogo, mas cada configuração continua separada para não ocultar contradições.</p></div>
+          <button id="resetFilters" class="text-button" type="button" data-i18n="resetFilters">Limpar filtros <span aria-hidden="true">↺</span></button>
+        </div>
+        <div class="filter-panel">
+          <label class="search-field"><span class="search-symbol">⌕</span><input id="searchInput" type="search" placeholder="Pesquisar jogo, Title ID, firmware, sintoma…" data-i18n-placeholder="searchPlaceholder" autocomplete="off"><kbd> / </kbd></label>
+          <div class="filter-row">
+            <label class="filter-control"><span data-i18n="filterFirmware">Firmware</span><select id="firmwareFilter"><option value="all" data-i18n="allFirmwares">Todos</option></select></label>
+            <label class="filter-control"><span data-i18n="filterFormat">Formato</span><select id="formatFilter"><option value="all" data-i18n="allFormats">Todos</option><option value="folder">Folder / dump</option><option value="ffpkg">.ffpkg / UFS</option><option value="exfat">.exfat</option><option value="ffpfs">.ffpfs</option><option value="ffpfsc">.ffpfsc</option><option value="lz4">LZ4</option></select></label>
+            <label class="filter-control"><span data-i18n="filterStorage">Armazenamento</span><select id="storageFilter"><option value="all" data-i18n="allStorage">Todos</option><option value="internal" data-i18n="storageInternal">SSD interno</option><option value="m2">M.2</option><option value="external-ssd" data-i18n="storageExternalSsd">SSD externo</option><option value="usb" data-i18n="storageUsb">USB / HDD externo</option></select></label>
+            <label class="filter-control"><span data-i18n="filterStatus">Estado reportado</span><select id="statusFilter"><option value="all" data-i18n="allStatuses">Todos</option><option value="completed" data-i18n="statusCompleted">Concluído sem problemas</option><option value="playable_issues" data-i18n="statusPlayableIssues">Jogável com problemas</option><option value="playable_short" data-i18n="statusPlayableShort">Teste curto / preliminar</option><option value="resolved" data-i18n="statusResolved">Problema resolvido</option><option value="launch_failed" data-i18n="statusLaunchFailed">Não inicia / ecrã preto</option><option value="crashes" data-i18n="statusCrashes">Crash / freeze</option></select></label>
+            <label class="filter-control sort-control"><span data-i18n="sortBy">Ordenar</span><select id="sortFilter"><option value="relevant" data-i18n="sortRelevant">Mais relatos primeiro</option><option value="alpha" data-i18n="sortAlpha">Nome do jogo A–Z</option><option value="problems" data-i18n="sortProblems">Problemas primeiro</option></select></label>
+          </div>
+        </div>
+        <div class="result-toolbar"><div><strong id="resultsHeading">—</strong><span id="resultsSub"></span></div><span class="result-note"><span class="tiny-shield">✓</span><span data-i18n="reportNote">Cada cartão mantém os testes separados por configuração</span></span></div>
+        <div id="resultsGrid" class="results-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty-state hidden"><div class="empty-symbol">⌕</div><h3 data-i18n="emptyTitle">Não foram encontrados resultados</h3><p data-i18n="emptyText">Altera os filtros ou tenta outra pesquisa.</p><button class="control-button" id="emptyReset" type="button" data-i18n="resetFilters">Limpar filtros</button></div>
+        <footer class="view-footer"><span data-i18n="shownFrom">A mostrar registos selecionados da base inicial.</span><span>Atlas v0.2.0</span></footer>
+      </section>
+
+      <section id="view-formats" class="tab-view">
+        <div class="section-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="formatLabel">FORMATO NÃO É GARANTIA</span></div><h2 data-i18n="formatTitle">Guia rápido de formatos</h2><p data-i18n="formatIntro">As recomendações do mantenedor e os resultados de utilizadores são apresentados separadamente.</p></div></div>
+        <div class="format-callout"><div class="format-callout-icon">i</div><div><strong data-i18n="formatCalloutTitle">Compatibilidade depende da configuração</strong><p data-i18n="formatCalloutText">O mesmo jogo pode funcionar num formato e falhar noutro. Não existe, nestes dados, um formato universalmente melhor para todos os jogos, firmwares e unidades.</p></div></div>
+        <div id="formatsGrid" class="formats-grid"></div>
+        <div class="method-card"><div class="method-icon">⌁</div><div><h3 data-i18n="formatMethodTitle">Como interpretar esta página</h3><p data-i18n="formatMethodText">O estado de um formato vem da documentação do ShadowMountPlus. Os relatos individuais ficam no separador Jogos e relatos. Não somamos resultados diferentes como se fossem testes controlados.</p></div></div>
+      </section>
+
+      <section id="view-downloads" class="tab-view">
+        <div class="section-intro download-intro">
+          <div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="downloadsEyebrow">FONTES OFICIAIS · FICHEIROS VERIFICÁVEIS</span></div><h2 data-i18n="downloadsTitle">Downloads & fontes</h2><p data-i18n="downloadsIntro">Explora homebrew publicado pelos respetivos autores, consulta a origem, compara o SHA-256 e gere uma fila local de downloads.</p></div>
+          <button id="refreshHomebrewCatalog" class="control-button" type="button" data-i18n="refreshCatalog">Atualizar catálogo ↻</button>
+        </div>
+        <div class="download-callout">
+          <div class="format-callout-icon">✓</div>
+          <div><strong data-i18n="downloadPolicyTitle">Downloads de homebrew com origem identificada</strong><p data-i18n="downloadPolicyText">O Atlas liga a releases oficiais e a catálogos de homebrew revistos. Verifica o hash quando existe um valor publicado. Não agrega nem distribui cópias não autorizadas de jogos comerciais. Os downloads externos podem exigir que abras a página do fornecedor.</p></div>
+        </div>
+        <div class="download-status-row"><span id="catalogStatusDot" class="status-dot"></span><span id="catalogStatusText" role="status" data-i18n="catalogNotLoaded">Catálogo ainda não carregado. Clica em «Atualizar catálogo».</span><span id="catalogUpdatedAt" class="source-date"></span></div>
+        <div class="download-layout">
+          <div class="download-main-column">
+            <div class="download-toolbar"><div><h3 data-i18n="officialHomebrewCatalog">Catálogo comunitário de homebrew</h3><p data-i18n="catalogExplanation">Dados do catálogo comunitário homebrew.page. Os ficheiros são alojados pelos respetivos projetos, não pelo Atlas.</p></div><label class="download-search"><span aria-hidden="true">⌕</span><input id="homebrewSearch" type="search" placeholder="Pesquisar app, autor ou Title ID…" data-i18n-placeholder="homebrewSearchPlaceholder"></label></div>
+            <div id="homebrewCatalogGrid" class="homebrew-grid"><div class="download-empty" data-i18n="catalogPrompt">Carrega no botão para consultar o catálogo comunitário em direto.</div></div>
+            <div class="download-toolbar custom-source-heading"><div><h3 data-i18n="otherOfficialTools">Outros projetos homebrew</h3><p data-i18n="officialToolNote">A aplicação pode abrir as páginas oficiais dos projetos; os respetivos catálogos externos não são importados nem copiados para o Atlas.</p></div></div>
+            <div id="officialToolSources" class="provider-grid"></div>
+            <div class="download-toolbar custom-source-heading"><div><h3 data-i18n="customSourcesTitle">Fontes personalizadas</h3><p data-i18n="customSourcesIntro">Guarda uma página de projeto ou uma release que tenhas autorização para usar. As fontes personalizadas são locais e não são rastreadas nem publicadas.</p></div></div>
+            <form id="customSourceForm" class="custom-source-form">
+              <label class="form-field"><span data-i18n="customSourceName">Nome da fonte</span><input id="customSourceNameInput" required maxlength="100" placeholder="O meu repositório autorizado" data-i18n-placeholder="customSourceNamePlaceholder"></label>
+              <label class="form-field"><span data-i18n="customSourceUrl">URL da página / release</span><input id="customSourceUrlInput" required type="url" placeholder="https://github.com/owner/repo/releases"></label>
+              <label class="consent-line source-consent"><input id="customSourceConsent" type="checkbox" required><span data-i18n="customSourceConsentText">Confirmo que tenho autorização para aceder e utilizar os ficheiros indicados. Não adicionarei links para cópias não autorizadas de jogos comerciais.</span></label>
+              <button class="primary-button" type="submit"><span>＋</span><span data-i18n="saveCustomSource">Guardar fonte localmente</span></button>
+              <div id="customSourceFeedback" class="form-feedback hidden" role="status"></div>
+            </form>
+            <div id="customSourcesList" class="custom-sources-list"></div>
+          </div>
+          <aside class="download-side-column">
+            <section class="download-side-card"><div class="side-card-heading"><div><span class="eyebrow-line"></span><h3 data-i18n="downloadQueueTitle">Fila de downloads</h3></div><span id="queueCount" class="queue-count">0</span></div><p data-i18n="queueExplanation">Os downloads compatíveis são transferidos no navegador e verificados contra o SHA-256 publicado. Se CORS ou o tamanho impedirem a transferência direta, abre a release oficial.</p><div class="queue-actions"><button id="startDownloadQueue" class="primary-button" type="button" data-i18n="startQueue">Iniciar fila</button><button id="clearDownloadQueue" class="control-button" type="button" data-i18n="clearQueue">Limpar</button></div><div id="downloadQueueList" class="download-queue-list"><p class="download-empty" data-i18n="queueEmpty">A fila está vazia.</p></div></section>
+            <section class="download-side-card"><div class="side-card-heading"><div><span class="eyebrow-line"></span><h3 data-i18n="sourceTypesTitle">Tipos de fonte</h3></div></div><div class="source-type-row"><span class="source-type source-type-good" data-i18n="sourceVerified">Hash publicado</span><p data-i18n="sourceVerifiedText">O ficheiro pode ser descarregado e comparado com o SHA-256 indicado pelo catálogo.</p></div><div class="source-type-row"><span class="source-type" data-i18n="sourceExternal">Fornecedor externo</span><p data-i18n="sourceExternalText">Abre-se a página oficial do fornecedor; o Atlas não ultrapassa CAPTCHAs, autenticação nem ligações temporárias.</p></div><div class="source-type-row"><span class="source-type source-type-warning" data-i18n="sourceUnknown">Não verificado</span><p data-i18n="sourceUnknownText">Sem hash ou origem verificável, o Atlas apenas mostra a página de origem e não classifica o ficheiro como seguro.</p></div></section>
+            <section class="download-side-card"><div class="side-card-heading"><div><span class="eyebrow-line"></span><h3 data-i18n="privacyDownloadTitle">Privacidade e limites</h3></div></div><p data-i18n="privacyDownloadText">A fila e as fontes guardadas ficam neste navegador. O Atlas não aloja ficheiros nem recebe logs. Downloads diretos requerem CORS e espaço de memória no navegador; existe um limite de tamanho.</p><button id="exportDownloadSettings" class="control-button full-width" type="button" data-i18n="exportDownloadSettings">Exportar fontes e fila</button><label class="file-import-button"><span data-i18n="importDownloadSettings">Importar fontes guardadas</span><input id="importDownloadSettings" type="file" accept="application/json,.json"></label></section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="view-sources" class="tab-view">
+        <div class="section-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="researchLabel">TRANSPARÊNCIA</span></div><h2 data-i18n="sourcesTitle">Fontes e metodologia</h2><p data-i18n="sourcesIntro">A base inicial cruza documentação técnica, issues do GitHub e relatos públicos do Reddit. Cada cartão de jogo aponta para a origem que sustenta o resumo.</p></div></div>
+        <div class="source-summary-grid"><div class="source-summary-card"><strong id="sourcesCount">—</strong><span data-i18n="sourcesCountLabel">fontes registadas</span></div><div class="source-summary-card"><strong id="lowConfidenceCount">—</strong><span data-i18n="lowConfidenceLabel">relatos com evidência limitada</span></div><div class="source-summary-card"><strong data-i18n="never">Downloads</strong><span data-i18n="noDownloadsLabel">não alojamos jogos; ligamos apenas a ficheiros autorizados</span></div></div>
+        <div class="method-card"><div class="method-icon">◎</div><div><h3 data-i18n="methodEvidenceTitle">O que significa a qualidade da evidência?</h3><p data-i18n="methodEvidenceText"><strong>Alta</strong>: issue detalhada/reprodutível ou documentação do mantenedor. <strong>Média</strong>: configuração e resultado descritos com algum detalhe. <strong>Baixa</strong>: comentário curto, campos em falta ou resultado preliminar. Estes níveis descrevem a documentação do relato, não uma probabilidade estatística de sucesso.</p></div></div>
+        <div class="source-list" id="sourcesList"></div>
+        <div class="method-notes"><h3 data-i18n="rulesTitle">Regras editoriais</h3><ul><li data-i18n="rule1">Um relato não equivale a compatibilidade universal. Os relatos contraditórios ficam separados.</li><li data-i18n="rule2">«Sem problemas até agora» é um teste preliminar; «jogo terminado» é evidência de maior alcance.</li><li data-i18n="rule3">Quando firmware, formato ou armazenamento não são indicados, o Atlas assinala o campo como desconhecido em vez de o adivinhar.</li><li data-i18n="rule4">Folhas históricas que listam o firmware mínimo/requisito do jogo não são misturadas com resultados de execução em homebrew.</li><li data-i18n="rule5">Os resumos são paráfrases. Consulta sempre a publicação original para o contexto completo e atualizações posteriores.</li></ul></div>
+      </section>
+
+      <section id="view-contribute" class="tab-view">
+        <div class="section-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="communityInput">PARTICIPAÇÃO COMUNITÁRIA</span></div><h2 data-i18n="contributeTitle">Adicionar um resultado de teste</h2><p data-i18n="contributeIntro">Regista uma observação com contexto suficiente para ser útil a outra pessoa.</p></div></div>
+        <div class="contribute-layout">
+          <form id="reportForm" class="report-form">
+            <div class="form-section-title"><span>01</span><div><strong data-i18n="formGameHeading">Jogo e configuração</strong><small data-i18n="formGameHint">Indica só aquilo que testaste.</small></div></div>
+            <div class="form-grid">
+              <label class="form-field span-2"><span data-i18n="gameNameLabel">Nome do jogo *</span><input id="inputGame" name="game" required maxlength="120" placeholder="e.g. Returnal"></label>
+              <label class="form-field"><span data-i18n="firmwareLabel">Firmware *</span><input id="inputFirmware" name="firmware" required maxlength="40" placeholder="e.g. 11.60"></label>
+              <label class="form-field"><span data-i18n="consoleLabel">Consola</span><select id="inputConsole" name="console"><option value="">—</option><option>PS5 base</option><option>PS5 Slim</option><option>PS5 Pro</option><option data-i18n="unknown">Não indicado</option></select></label>
+              <label class="form-field"><span data-i18n="gameVersionLabel">Versão do jogo</span><input id="inputGameVersion" name="game_version" maxlength="80" placeholder="e.g. 01.019.076"></label>
+              <label class="form-field"><span data-i18n="formatLabel2">Formato *</span><select id="inputFormat" name="format" required><option value="">—</option><option>Folder / dump</option><option>.ffpkg / UFS</option><option>.exfat</option><option>.ffpfs</option><option>.ffpfsc</option><option>LZ4</option><option data-i18n="notSure">Não sei / não indicado</option></select></label>
+              <label class="form-field"><span data-i18n="storageLabel">Armazenamento *</span><select id="inputStorage" name="storage" required><option value="">—</option><option data-i18n="storageInternal">SSD interno</option><option>M.2</option><option data-i18n="storageExternalSsd">SSD externo</option><option data-i18n="storageUsb">USB / HDD externo</option><option data-i18n="notSure">Não sei / não indicado</option></select></label>
+              <label class="form-field"><span data-i18n="toolVersionsLabel">Versões das ferramentas</span><input id="inputTools" name="tools" maxlength="180" placeholder="KStuff Lite; ShadowMountPlus"></label>
+            </div>
+            <div class="form-section-title second-form-section"><span>02</span><div><strong data-i18n="formResultHeading">Resultado observado</strong><small data-i18n="formResultHint">Seleciona o resultado mais próximo.</small></div></div>
+            <div class="status-choice-grid">
+              <label class="status-choice"><input type="radio" name="status" value="completed" required><span class="status-choice-dot good"></span><span data-i18n="statusCompleted">Concluído sem problemas</span></label>
+              <label class="status-choice"><input type="radio" name="status" value="playable_issues"><span class="status-choice-dot warn"></span><span data-i18n="statusPlayableIssues">Jogável com problemas</span></label>
+              <label class="status-choice"><input type="radio" name="status" value="playable_short"><span class="status-choice-dot neutral"></span><span data-i18n="statusPlayableShort">Teste curto / preliminar</span></label>
+              <label class="status-choice"><input type="radio" name="status" value="launch_failed"><span class="status-choice-dot bad"></span><span data-i18n="statusLaunchFailed">Não inicia / ecrã preto</span></label>
+              <label class="status-choice"><input type="radio" name="status" value="crashes"><span class="status-choice-dot bad"></span><span data-i18n="statusCrashes">Crash / freeze</span></label>
+              <label class="status-choice"><input type="radio" name="status" value="resolved"><span class="status-choice-dot fixed"></span><span data-i18n="statusResolved">Problema resolvido</span></label>
+            </div>
+            <div class="form-grid extra-fields">
+              <label class="form-field span-2"><span data-i18n="symptomsLabel">Sintomas / observações *</span><textarea id="inputSymptoms" name="summary" required rows="4" maxlength="1500" placeholder="O que aconteceu? Durante quanto tempo testaste? Algum erro?" data-i18n-placeholder="symptomsPlaceholder"></textarea></label>
+              <label class="form-field span-2"><span data-i18n="resolutionLabel">Resolução (se aplicável)</span><textarea id="inputResolution" name="resolution" rows="2" maxlength="1000" placeholder="O que mudou e se foi confirmado…" data-i18n-placeholder="resolutionPlaceholder"></textarea></label>
+              <label class="form-field span-2"><span data-i18n="sourceUrlLabel">Link para o post/issue público *</span><input id="inputSourceUrl" name="source_url" required type="url" placeholder="https://…"></label>
+            </div>
+            <label class="consent-line"><input id="inputConsent" type="checkbox" required><span data-i18n="consentText">Confirmo que é um resultado que observei ou uma fonte pública que estou a citar; não incluí dados pessoais.</span></label>
+            <div class="form-actions"><button class="primary-button" type="submit"><span>＋</span><span data-i18n="saveReport">Guardar resultado localmente</span></button><p data-i18n="localOnly">Os resultados submetidos ficam apenas neste navegador. Não são enviados para um servidor.</p></div>
+            <div id="formFeedback" class="form-feedback hidden" role="status"></div>
+          </form>
+          <aside class="local-data-panel"><div class="local-data-icon">⌂</div><h3 data-i18n="localPanelTitle">Contribuições locais</h3><p data-i18n="localPanelText">Este protótipo não tem backend central. Exporta os teus resultados em JSON para os reveres ou preparares uma contribuição ao repositório.</p><div class="local-data-count"><strong id="localReportsTotal">0</strong><span data-i18n="localSaved">resultados guardados neste navegador</span></div><button id="exportLocalReports" class="control-button full-width" type="button" data-i18n="exportJson">Exportar JSON</button><button id="clearLocalReports" class="text-button danger-text" type="button" data-i18n="clearLocal">Apagar contribuições locais</button><div id="localReportsList" class="local-reports-list"></div></aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer"><div class="footer-brand"><span class="footer-dot"></span><strong>PS5 Game Compatibility Atlas</strong><small data-i18n="footerPreview">Pré-visualização local · v0.2.0</small></div><div class="footer-right"><span data-i18n="footerNoAffiliation">Projeto comunitário independente. Não afiliado à Sony.</span><a href="https://github.com/drakmor/ShadowMountPlus" target="_blank" rel="noopener noreferrer" data-i18n="footerDocumentation">Documentação técnica ↗</a></div></footer>
+  </div>
+  <script src="data/atlas-data.js"></script>
+  <script src="app.js"></script>
+  <script src="downloads.js"></script>
+</body>
+</html>
