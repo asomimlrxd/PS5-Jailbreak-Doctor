@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import threading
 import urllib.error
 from datetime import datetime, timezone
@@ -21,6 +22,7 @@ from doctor_core import (
 )
 from safe_actions import list_actions, rename_for_rule, rollback_action
 from session_utils import format_source_blocks
+from session_compare import compare_log_texts
 from app_paths import data_path
 from updates import check_for_updates, download_update, install_update, latest_backup, restore_last_backup, UpdateError
 from i18n import set_language as set_ui_language, tr, register_knowledge_base, install_tkinter_translation
@@ -32,22 +34,22 @@ install_tkinter_translation()
 DEFAULT_THEME = "dark"
 THEMES = {
     "light": {
-        "BG": "#ffffff", "PANEL": "#f7f9fc", "PANEL_ALT": "#edf2f7",
-        "INPUT": "#ffffff", "TEXT": "#1d2735", "MUTED": "#586779",
-        "ACCENT": "#3d705b", "GREEN": "#16764b", "AMBER": "#875900",
-        "RED": "#b42318", "BORDER": "#d8e0e8", "ACCENT_ACTIVE": "#315b4b",
-        "ACCENT_DISABLED": "#a7b8ad", "BUTTON_BG": "#3f725d", "BUTTON_ACTIVE": "#315b4b",
-        "BUTTON_DISABLED": "#a7b8ad", "DISABLED_BG": "#eef1f4",
-        "DISABLED_TEXT": "#8a96a3", "SELECT_TEXT": "#ffffff",
+        "BG": "#f4f7fa", "PANEL": "#ffffff", "PANEL_ALT": "#eaf0f5",
+        "INPUT": "#ffffff", "TEXT": "#17212b", "MUTED": "#586978",
+        "ACCENT": "#217a61", "GREEN": "#17764e", "AMBER": "#8a5b00",
+        "RED": "#b42318", "BORDER": "#d8e1e8", "ACCENT_ACTIVE": "#16634e",
+        "ACCENT_DISABLED": "#a8c1b5", "BUTTON_BG": "#26745b", "BUTTON_ACTIVE": "#1c604a",
+        "BUTTON_DISABLED": "#a8c1b5", "DISABLED_BG": "#edf1f4",
+        "DISABLED_TEXT": "#7b8895", "SELECT_TEXT": "#ffffff",
     },
     "dark": {
-        "BG": "#0b0b0d", "PANEL": "#17191d", "PANEL_ALT": "#22252b",
-        "INPUT": "#101114", "TEXT": "#f1f3f6", "MUTED": "#a6afbb",
-        "ACCENT": "#8bb8a1", "GREEN": "#75d6a3", "AMBER": "#ffd078",
-        "RED": "#ff8983", "BORDER": "#383d46", "ACCENT_ACTIVE": "#6f9f87",
-        "ACCENT_DISABLED": "#465b4e", "BUTTON_BG": "#456b57", "BUTTON_ACTIVE": "#365744",
-        "BUTTON_DISABLED": "#394a3f", "DISABLED_BG": "#202329",
-        "DISABLED_TEXT": "#737d8a", "SELECT_TEXT": "#ffffff",
+        "BG": "#0c1117", "PANEL": "#151c24", "PANEL_ALT": "#1d2732",
+        "INPUT": "#0f151c", "TEXT": "#f1f5f9", "MUTED": "#9eacba",
+        "ACCENT": "#60d6b4", "GREEN": "#59d69b", "AMBER": "#f6c768",
+        "RED": "#ff8585", "BORDER": "#2d3b48", "ACCENT_ACTIVE": "#42b998",
+        "ACCENT_DISABLED": "#456458", "BUTTON_BG": "#27765f", "BUTTON_ACTIVE": "#20634f",
+        "BUTTON_DISABLED": "#394f46", "DISABLED_BG": "#202832",
+        "DISABLED_TEXT": "#758290", "SELECT_TEXT": "#ffffff",
     },
 }
 
@@ -304,8 +306,8 @@ class DoctorApp(tk.Tk):
         style.configure("Sub.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 9))
         style.configure("Panel.TLabel", background=PANEL, foreground=TEXT, font=("Segoe UI", 10))
         style.configure("PanelSub.TLabel", background=PANEL, foreground=MUTED, font=("Segoe UI", 9))
-        style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 21, "bold"))
-        style.configure("Section.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 14, "bold"))
+        style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 23, "bold"))
+        style.configure("Section.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 15, "bold"))
         style.configure("Source.TLabel", background=BG, foreground=ACCENT, font=("Segoe UI", 9, "bold"))
         style.configure("ConnectionStatus.TLabel", background=PANEL, foreground=GREEN, font=("Segoe UI", 10, "bold"))
         style.configure("DashboardHeading.TLabel", background=PANEL, foreground=TEXT, font=("Segoe UI", 10, "bold"))
@@ -535,6 +537,8 @@ class DoctorApp(tk.Tk):
                                  activebackground=PANEL_ALT, activeforeground=TEXT,
                                  disabledforeground=MUTED, relief="solid", borderwidth=1)
         self.more_menu.add_command(label="Guardar relatório…", command=self.save_report)
+        self.more_menu.add_command(label="Exportar relatório anonimizado…", command=self.save_share_report)
+        self.more_menu.add_command(label="Comparar sessões…", command=self.compare_sessions)
         self.more_menu.add_command(label="Histórico e reversões…", command=self.open_history)
         self.more_menu.add_separator()
         self.more_menu.add_command(label="Atualizar base de diagnósticos…", command=self.check_diagnostic_updates)
@@ -768,6 +772,7 @@ class DoctorApp(tk.Tk):
         toolbar.pack(fill="x")
         ttk.Label(toolbar, text="Logs completos", style="Section.TLabel", font=("Segoe UI", 11, "bold")).pack(side="left")
         ttk.Label(toolbar, text="Texto original; não é modificado pela tradução da interface.", style="Sub.TLabel").pack(side="left", padx=(12, 0))
+        ttk.Button(toolbar, text="Comparar sessões…", command=self.compare_sessions).pack(side="right", padx=(6, 0))
         ttk.Button(toolbar, text="Importar ficheiros…", command=self.open_files).pack(side="right")
         self.log_text = ScrolledText(self.logs_tab, wrap="word", undo=True, bg=INPUT, fg=TEXT,
                                      insertbackground=TEXT, selectbackground=ACCENT,
@@ -787,7 +792,8 @@ class DoctorApp(tk.Tk):
         ttk.Label(left, textvariable=self.api_info, style="PanelSub.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(7, 0))
         ttk.Label(right, text="PRIVACIDADE E SEGURANÇA", style="Panel.TLabel", font=("Segoe UI", 9, "bold")).pack(anchor="w")
         ttk.Label(right, text="A API do ShadowMountPlus não tem autenticação nas versões suportadas. Utiliza-a apenas numa rede local de confiança e nunca encaminhes a porta para a Internet. Os logs são analisados localmente; não são enviados automaticamente.", style="PanelSub.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(5, 0))
-        ttk.Button(right, text="Verificar scanner (leitura apenas)", command=self.inspect_scanner).pack(anchor="w", pady=(8, 0))
+        ttk.Button(right, text="Diagnóstico detalhado da ligação", command=self.test_api).pack(anchor="w", pady=(8, 5))
+        ttk.Button(right, text="Verificar scanner (leitura apenas)", command=self.inspect_scanner).pack(anchor="w", pady=(0, 0))
 
     def _get_context(self) -> dict:
         reverse_maps = {
@@ -823,7 +829,7 @@ class DoctorApp(tk.Tk):
         self.conn_status.set(tr(message))
         if hasattr(self, "conn_status_label"):
             low = str(message).casefold()
-            color = RED if ("não ligada" in low or "not connected" in low or "não foi possível" in low) else GREEN if ("confirmada" in low or "ps5 ligada" in low or "connected" in low) else AMBER
+            color = RED if ("não ligada" in low or "not connected" in low or "não foi possível" in low or "indisponível" in low or "unavailable" in low or "refused" in low or "failed" in low) else GREEN if ("confirmada" in low or "ps5 ligada" in low or "connected" in low) else AMBER
             try:
                 self.conn_status_label.configure(foreground=color)
             except tk.TclError:
@@ -1136,21 +1142,127 @@ class DoctorApp(tk.Tk):
         return error
 
     def test_api(self):
+        """Run a network + read-only API health check. It never writes to ShadowMountPlus."""
         def job():
-            data = api_post(self.host.get(), self.port.get(), "/api/v1/version", {})
-            if isinstance(data, dict) and data.get("status", 0) not in (0, None):
-                raise RuntimeError(f"A API respondeu com erro: {data}")
-            return lambda app: app._show_api_result(data)
+            raw_host, raw_port = self.host.get().strip(), self.port.get().strip()
+            host = raw_host.replace("http://", "").replace("https://", "").strip("/")
+            checks = []
+            try:
+                port_num = int(raw_port)
+                if not host or any(ch in host for ch in "/?#@") or not 1 <= port_num <= 65535:
+                    raise ValueError("Indica um IP/nome de anfitrião válido e uma porta entre 1 e 65535.")
+                with socket.create_connection((host, port_num), timeout=2.5):
+                    pass
+                checks.append(("Conectividade TCP", "ok", "É possível abrir uma ligação TCP ao destino indicado."))
+            except Exception as exc:
+                checks.append(("Conectividade TCP", "fail", str(exc)))
+
+            try:
+                version = api_post(raw_host, raw_port, "/api/v1/version", {}, timeout=3.0)
+                if not isinstance(version, dict):
+                    raise RuntimeError("A API não devolveu um objeto JSON reconhecível.")
+                if version.get("status", 0) not in (0, None):
+                    raise RuntimeError(str(version.get("error", version)))
+            except Exception as exc:
+                return lambda app, error=str(exc), results=checks: app._show_api_result(None, results, error)
+
+            api_version = version.get("api_version", "não indicado")
+            sm_version = version.get("shadowmount_version", "desconhecida")
+            checks.append(("API /api/v1/version", "ok", f"API {api_version}; ShadowMountPlus {sm_version}."))
+            capabilities = version.get("capabilities", [])
+            capabilities = set(capabilities) if isinstance(capabilities, list) else set()
+            probes = (
+                ("Leitura de debug.log", "/api/v1/debug-log", {"max_bytes": 4096}, "read_debug_log"),
+                ("Leitura de kernel log", "/api/v1/kernel-log", {"max_bytes": 4096}, "read_kernel_log"),
+                ("Definições do scanner", "/api/v1/settings", {}, "manage_settings"),
+                ("Lista de origens manuais", "/api/v1/manual/list", {}, "list_manual_sources"),
+            )
+            for label, route, payload, capability in probes:
+                if capabilities and capability not in capabilities:
+                    checks.append((label, "skip", "Esta versão não anuncia a capacidade correspondente."))
+                    continue
+                try:
+                    result = api_post(raw_host, raw_port, route, payload, timeout=2.5)
+                    if isinstance(result, dict) and result.get("status", 0) not in (0, None):
+                        checks.append((label, "warn", str(result.get("error", result))))
+                    else:
+                        detail = "Endpoint respondeu com sucesso."
+                        if route.endswith("debug-log") or route.endswith("kernel-log"):
+                            detail = "Endpoint respondeu; a recolha de logs pode continuar vazia se não houver linhas disponíveis."
+                        checks.append((label, "ok", detail))
+                except Exception as exc:
+                    checks.append((label, "warn", str(exc)))
+            return lambda app, data=version, results=checks: app._show_api_result(data, results, None)
+
         self._async_action([self.btn_test, self.btn_fetch, self.btn_scanner], job)
 
-    def _show_api_result(self, data):
-        version = data.get("shadowmount_version", "desconhecida") if isinstance(data, dict) else "desconhecida"
+    def _show_api_result(self, data, checks=None, error=None):
+        checks = checks or []
+        if not isinstance(data, dict) or error:
+            self._set_conn_status("API indisponível")
+            self._set_api_info("A ligação não ficou confirmada. Abre o diagnóstico detalhado para ver os testes e a causa provável.")
+            self._set_status("Não foi possível confirmar a API do ShadowMountPlus.", "warning")
+            self._show_connection_diagnostics(checks, error or "A API não devolveu uma resposta válida.")
+            return
+
+        version = data.get("shadowmount_version", "desconhecida")
         self.last_api_version = version
         if hasattr(self, "api_version_var"):
             self.api_version_var.set(tr("Versão da API: ") + str(version))
+        ok_routes = sum(1 for _, state, _ in checks if state == "ok")
         self._set_conn_status("✅ Ligação confirmada")
-        self._set_api_info("Agora clica em «Obter logs e analisar» para analisar os logs reais da PS5.")
-        self._set_status("Ligação confirmada ✅", "ok")
+        self._set_api_info(f"{tr('API confirmada')} · {ok_routes} {tr('verificações bem-sucedidas')}. {tr('Consulta os detalhes para ver as capacidades disponíveis.')}")
+        self._set_status("Ligação confirmada. Foram executados testes de leitura; a consola não foi alterada.", "ok")
+        self._show_connection_diagnostics(checks, None)
+
+    def _show_connection_diagnostics(self, checks, error=None):
+        win = tk.Toplevel(self)
+        win.title(tr("Diagnóstico detalhado da ligação"))
+        win.geometry("760x560")
+        win.minsize(600, 430)
+        win.configure(bg=BG)
+        win.transient(self)
+        outer = ttk.Frame(win, padding=16)
+        outer.pack(fill="both", expand=True)
+        ttk.Label(outer, text=tr("Diagnóstico detalhado da ligação"), style="Section.TLabel").pack(anchor="w")
+        ttk.Label(
+            outer,
+            text=tr("Foram usados apenas endpoints de leitura. Nenhuma configuração ou origem foi alterada."),
+            style="Sub.TLabel", wraplength=700, justify="left",
+        ).pack(anchor="w", pady=(5, 12))
+        output = ScrolledText(
+            outer, wrap="word", bg=INPUT, fg=TEXT, insertbackground=TEXT,
+            relief="flat", borderwidth=0, font=("Consolas", 10), padx=12, pady=10,
+        )
+        output.pack(fill="both", expand=True)
+        output.tag_configure("ok", foreground=GREEN)
+        output.tag_configure("warn", foreground=AMBER)
+        output.tag_configure("fail", foreground=RED)
+        output.tag_configure("skip", foreground=MUTED)
+
+        if error:
+            output.insert("end", tr("A API não respondeu como esperado") + "\n", "fail")
+            output.insert("end", str(error) + "\n\n")
+        for label, state, detail in checks:
+            marker = {"ok": "[OK]", "warn": f"[{tr('ATENÇÃO')}]", "fail": f"[{tr('FALHA')}]", "skip": f"[{tr('NÃO ANUNCIADO')}]"} .get(state, "[INFO]")
+            output.insert("end", f"{marker} {tr(label)}\n", state)
+            output.insert("end", f"  {tr(detail)}\n\n")
+
+        if error:
+            low = str(error).casefold()
+            if "timed out" in low or "timeout" in low:
+                hint = "Confirma se o PC e a PS5 estão na mesma rede local, se o IP ainda é o atual e se não existe VPN ou isolamento entre clientes Wi-Fi. Um ping bloqueado, por si só, não prova que a API está indisponível."
+            elif "connection refused" in low or "actively refused" in low or "10061" in low:
+                hint = "O endereço respondeu, mas não há um serviço a aceitar ligações nessa porta. A API do ShadowMountPlus usa 127.0.0.1:10101 por defeito; esse endereço só aceita ligações locais na PS5. Para o Doctor no Windows, a API tem de estar associada a uma interface acessível pela rede local. O Doctor não altera o config.ini."
+            else:
+                hint = "Confirma o IP, a porta e a versão do ShadowMountPlus. Se a versão da API responder mas algum endpoint opcional falhar, isso não significa que toda a ligação esteja avariada."
+            output.insert("end", tr("Próximo passo") + "\n", "warn")
+            output.insert("end", tr(hint) + "\n")
+        else:
+            output.insert("end", tr("Nota de segurança") + "\n", "warn")
+            output.insert("end", tr("A API não tem autenticação. Mantém-na numa rede local de confiança e nunca encaminhes a porta para a Internet.") + "\n")
+        output.configure(state="disabled")
+        ttk.Button(outer, text=tr("Fechar"), command=win.destroy).pack(anchor="e", pady=(10, 0))
 
     def fetch_logs(self):
         def job():
@@ -1619,6 +1731,110 @@ class DoctorApp(tk.Tk):
             )
         plan_list.bind("<<ListboxSelect>>", on_plan_select)
 
+    def compare_sessions(self):
+        """Compare the current log buffer to a selected earlier log, entirely on this PC."""
+        current = self.log_text.get("1.0", "end-1c")
+        if not current.strip():
+            messagebox.showinfo("Sem logs", "Importa ou cola os logs atuais antes de comparar sessões.", parent=self)
+            return
+        path = filedialog.askopenfilename(
+            parent=self,
+            title="Selecionar sessão anterior",
+            filetypes=[("Logs e texto", "*.log *.txt *.json"), ("Todos os ficheiros", "*.*")],
+        )
+        if not path:
+            return
+        try:
+            source_path = Path(path)
+            if source_path.stat().st_size > 8_000_000:
+                messagebox.showwarning("Ficheiro demasiado grande", "A comparação está limitada a ficheiros de 8 MB para manter a aplicação responsiva.", parent=self)
+                return
+            baseline = source_path.read_text(encoding="utf-8", errors="replace")
+            result = compare_log_texts(baseline, current, source_path.name, "sessão atual")
+        except Exception as exc:
+            messagebox.showerror("Não foi possível comparar", str(exc), parent=self)
+            return
+
+        win = tk.Toplevel(self)
+        win.title(tr("Comparação de sessões"))
+        win.geometry("900x650")
+        win.minsize(650, 450)
+        win.configure(bg=BG)
+        win.transient(self)
+        outer = ttk.Frame(win, padding=16)
+        outer.pack(fill="both", expand=True)
+        ttk.Label(outer, text=tr("Comparação de sessões"), style="Section.TLabel").pack(anchor="w")
+        summary = (
+            f"{Path(path).name} → {tr('sessão atual')}\n"
+            f"{tr('Linhas anteriores')}: {result['baseline_lines']} · {tr('Linhas atuais')}: {result['current_lines']}\n"
+            f"{tr('Linhas novas')}: {result['added_count']} · {tr('Linhas que desapareceram')}: {result['removed_count']}"
+        )
+        ttk.Label(outer, text=summary, style="Sub.TLabel", justify="left", wraplength=850).pack(anchor="w", pady=(5, 12))
+        diff_view = ScrolledText(outer, wrap="none", bg=INPUT, fg=TEXT, insertbackground=TEXT,
+                                 relief="flat", borderwidth=0, font=("Consolas", 9), padx=10, pady=8)
+        diff_view.pack(fill="both", expand=True)
+        diff_view.tag_configure("added", foreground=GREEN)
+        diff_view.tag_configure("removed", foreground=RED)
+        diff_text = result["diff"] or tr("Não foram encontradas diferenças de texto.")
+        for line in diff_text.splitlines():
+            tag = "added" if line.startswith("+") and not line.startswith("+++") else "removed" if line.startswith("-") and not line.startswith("---") else None
+            diff_view.insert("end", line + "\n", tag)
+        diff_view.configure(state="disabled")
+
+        def save_diff():
+            target = filedialog.asksaveasfilename(
+                parent=win, title=tr("Guardar comparação"), defaultextension=".diff",
+                filetypes=[("Diff de texto", "*.diff"), ("Ficheiro de texto", "*.txt")],
+                initialfile="ps5-session-comparison.diff",
+            )
+            if not target:
+                return
+            try:
+                Path(target).write_text(result["diff"], encoding="utf-8")
+            except OSError as exc:
+                messagebox.showerror(tr("Erro ao guardar"), str(exc), parent=win)
+                return
+            self._set_status("Comparação guardada localmente. Revê-a antes de a partilhares.", "ok")
+        buttons = ttk.Frame(outer)
+        buttons.pack(fill="x", pady=(10, 0))
+        ttk.Button(buttons, text=tr("Guardar diff…"), command=save_diff).pack(side="right", padx=(6, 0))
+        ttk.Button(buttons, text=tr("Fechar"), command=win.destroy).pack(side="right")
+
+    def save_share_report(self):
+        """Create a share-ready report with redaction forced on and source paths reduced to basenames."""
+        raw = self.log_text.get("1.0", "end-1c")
+        if not raw.strip():
+            messagebox.showinfo(tr("Sem logs"), tr("Importa ou cola logs antes de exportar um relatório."), parent=self)
+            return
+        current_context = self._get_context()
+        if not self.findings or raw != self.last_analyzed_text or current_context != self.last_analyzed_context:
+            self.analyze()
+            current_context = self._get_context()
+        path = filedialog.asksaveasfilename(
+            parent=self, title=tr("Exportar relatório anonimizado"),
+            defaultextension=".md",
+            filetypes=[("Relatório Markdown", "*.md"), ("Ficheiro de texto", "*.txt")],
+            initialfile="ps5-jailbreak-doctor-share-report.md",
+        )
+        if not path:
+            return
+        source_names = [Path(str(name)).name for name in self.sources]
+        report = make_markdown_report(
+            raw, self.findings, anonymize=True, source_names=source_names,
+            context=current_context, language=self.language,
+        )
+        try:
+            Path(path).write_text(report, encoding="utf-8")
+        except OSError as exc:
+            messagebox.showerror(tr("Erro ao guardar"), str(exc), parent=self)
+            return
+        self._set_status("Relatório anonimizado guardado. Revê o conteúdo antes de o partilhares.", "ok")
+        messagebox.showinfo(
+            tr("Relatório pronto"),
+            tr("Foi aplicado o filtro de anonimização e os caminhos das origens foram reduzidos a nomes de ficheiro. Revê sempre o relatório antes de o partilhares; a anonimização não garante remover todos os identificadores."),
+            parent=self,
+        )
+
     def save_report(self):
         raw = self.log_text.get("1.0", "end-1c")
         if not raw.strip():
@@ -1639,7 +1855,7 @@ class DoctorApp(tk.Tk):
             raw,
             self.findings,
             anonymize=self.anonymize.get(),
-            source_names=self.sources,
+            source_names=([Path(str(name)).name for name in self.sources] if self.anonymize.get() else self.sources),
             context=current_context,
             language=self.language,
         )

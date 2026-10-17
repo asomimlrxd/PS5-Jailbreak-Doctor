@@ -6,6 +6,16 @@
 
 [GitHub project overview](README.md) · [Português (Portugal)](README_PT.md)
 
+## What's new in version 1.04
+
+- **Connection diagnostics:** checks network reachability and read-only ShadowMountPlus endpoints, explaining the difference between a timeout, a refused port, and unsupported capabilities.
+- **Compare sessions:** shows differences between the current logs and an earlier file without modifying either source.
+- **Anonymized report export:** generates a share-ready report with redaction forced on and local source paths reduced to filenames.
+- **Updated knowledge base:** includes recent reports about an unresponsive HTTP listener and scans stuck after game exit, while keeping open reports clearly unconfirmed.
+- **Refreshed interface:** more modern slate surfaces, dark/light palettes, green accents, and slightly larger typography.
+
+The app retains the original HTTP API integration. It does not include an ELF relay, edit `config.ini`, or change the console during connection checks.
+
 ![Diagnostic results using sample data](./docs/images/dashboard-en.png)
 
 *Illustrative results view using sample data. This does not mean that the shown errors are present on every console.*

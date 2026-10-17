@@ -24,7 +24,10 @@ jobs:
           python-version: '3.12'
 
       - name: Compile Python source
-        run: python -m compileall -q app.py app_paths.py doctor_core.py i18n.py safe_actions.py session_utils.py updates.py
+        run: python -m compileall -q app.py app_paths.py doctor_core.py i18n.py safe_actions.py session_utils.py updates.py session_compare.py
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
 
       - name: Validate knowledge database and update manifest
         shell: python

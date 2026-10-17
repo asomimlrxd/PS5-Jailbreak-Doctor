@@ -4,8 +4,6 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
   contents: write
@@ -30,17 +28,24 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $root = (Resolve-Path ".").Path
-          $required = @("app.py", "app_paths.py", "doctor_core.py", "i18n.py", "safe_actions.py", "session_utils.py", "knowledge_base.json")
+          $required = @("app.py", "app_paths.py", "doctor_core.py", "i18n.py", "safe_actions.py", "session_utils.py", "session_compare.py", "knowledge_base.json")
           foreach ($name in $required) {
             $file = Join-Path $root $name
             if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
               throw "Missing required project file: $file"
             }
           }
-          python -m compileall -q app.py app_paths.py doctor_core.py i18n.py safe_actions.py session_utils.py
+          python -m compileall -q app.py app_paths.py doctor_core.py i18n.py safe_actions.py session_utils.py session_compare.py
           if ($LASTEXITCODE -ne 0) { throw "Python source validation failed." }
           python -c "import json; from pathlib import Path; d=json.loads(Path('knowledge_base.json').read_text(encoding='utf-8')); assert d.get('schema_version') == 1 and isinstance(d.get('rules'), list) and d['rules']; print('Knowledge database OK - rules:', len(d['rules']))"
           if ($LASTEXITCODE -ne 0) { throw "knowledge_base.json is invalid." }
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw "Unit tests failed." }
 
       - name: Install PyInstaller
         shell: pwsh
@@ -116,18 +121,21 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Attach executable to the published GitHub Release
-        if: github.event_name == 'release'
+      - name: Create draft release metadata (v1.04; no binary attached)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[create-draft-release:v1.04]')
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           $ErrorActionPreference = "Stop"
-          if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) { throw "Release tag could not be resolved." }
-          gh release upload $env:RELEASE_TAG `
-            "dist/PS5JailbreakDoctor.exe" `
-            "dist/PS5JailbreakDoctor.exe.sha256" `
-            --clobber
-          if ($LASTEXITCODE -ne 0) { throw "Could not attach the EXE to release $env:RELEASE_TAG." }
-          Write-Host "Attached Windows EXE to release $env:RELEASE_TAG."
+          $tag = "v1.04"
+          $existing = gh release view $tag --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $release = $existing | ConvertFrom-Json
+            if (-not $release.isDraft) { throw "Release $tag already exists and is published; refusing to overwrite it." }
+            Write-Host "Draft release $tag already exists; leaving it unchanged."
+          } else {
+            gh release create $tag --draft --title "PS5 Jailbreak Doctor 1.04" --notes-file "CHANGELOG_1.04.md" --target "main"
+            if ($LASTEXITCODE -ne 0) { throw "Failed to create the draft release $tag." }
+            Write-Host "Created draft release $tag without attaching an executable."
+          }
