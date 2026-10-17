@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.04 — Diagnostic intelligence, connection checks and report tools
+
+### Added
+- Read-only connection diagnostics: TCP reachability, ShadowMountPlus API version, advertised read capabilities, and a clear explanation of local-only API binding versus LAN access.
+- Local session comparison: compare current logs with an earlier file, inspect a unified diff, count added/removed lines, and save the diff locally.
+- Dedicated anonymized report export: forces log redaction and reduces local source paths to filenames; the user is reminded to review the report before sharing.
+- Two context-aware knowledge-base rules for the HTTP API listener becoming unresponsive and scans remaining queued after a game exits.
+- Current guidance from the official ShadowMountPlus 1.7beta5 release notes, while keeping open issues and pull requests clearly labelled as unconfirmed.
+- Automated regression tests for session comparison, recent diagnostic signatures, dataset/manifest integrity, and the Windows build.
+
+### Updated
+- Refined dark/light palettes with slate surfaces, clearer green accents, larger heading typography, and a more structured diagnostic experience.
+- Added current sources to the knowledge database and refreshed the update manifest to database version `2026.10.17.1`.
+- Preserved the original HTTP API integration. The abandoned ELF relay client was removed; no ELF is included or required.
+- Removed automatic executable upload on release events. Draft releases can be created without attaching or overwriting a binary.
+
+### Safety and limitations
+- Connection checks call only version, log-read, settings-read, and manual-list endpoints. They do not write ShadowMountPlus settings, rescan, mount, uninstall, move, or delete anything.
+- The ShadowMountPlus API has no authentication. Use it only on a trusted local network and never forward the port to the public internet.
+- The session comparison is text-based; differences are not automatically treated as the cause of an error.
+- Community reports and an open pull request are not represented as confirmed fixes.
+
+### Validation status
+- Automated source/database validation and regression tests run in GitHub Actions.
+- The Windows executable build runs separately in GitHub Actions.
+- Real connection testing on a physical PS5 and final executable testing remain manual checks. The v1.04 GitHub release will stay in draft until the maintainer adds the tested executable.
+
+
 ## 1.02 — Release maintenance
 
 - Align the in-app version with the next release label (`1.02`).
