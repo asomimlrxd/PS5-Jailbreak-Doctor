@@ -829,7 +829,7 @@ class DoctorApp(tk.Tk):
         self.conn_status.set(tr(message))
         if hasattr(self, "conn_status_label"):
             low = str(message).casefold()
-            color = RED if ("não ligada" in low or "not connected" in low or "não foi possível" in low) else GREEN if ("confirmada" in low or "ps5 ligada" in low or "connected" in low) else AMBER
+            color = RED if ("não ligada" in low or "not connected" in low or "não foi possível" in low or "indisponível" in low or "unavailable" in low or "refused" in low or "failed" in low) else GREEN if ("confirmada" in low or "ps5 ligada" in low or "connected" in low) else AMBER
             try:
                 self.conn_status_label.configure(foreground=color)
             except tk.TclError:
