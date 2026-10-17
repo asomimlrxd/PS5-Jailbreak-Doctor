@@ -6,6 +6,16 @@
 
 [README principal do GitHub](README.md) · [English](README_EN.md)
 
+## Novidades da versão 1.04
+
+- **Diagnóstico de ligação:** testa a conectividade e consulta endpoints de leitura do ShadowMountPlus, explicando a diferença entre timeout, porta recusada e capacidades não suportadas.
+- **Comparar sessões:** mostra diferenças entre os logs atuais e um ficheiro anterior, sem alterar os originais.
+- **Relatório anonimizado:** exporta um relatório com redação forçada e caminhos locais reduzidos a nomes de ficheiros.
+- **Base atualizada:** inclui relatos recentes sobre o listener HTTP e varreduras presas depois de fechar jogos, mantendo os casos abertos identificados como não confirmados.
+- **Interface revista:** paleta escura/clara mais moderna, superfícies azul-ardósia e acentos verdes.
+
+A aplicação mantém a ligação HTTP original. Não inclui relay ELF, não modifica `config.ini` e não altera a consola durante os testes de ligação.
+
 ![Resultados de diagnóstico com dados de exemplo](./docs/images/dashboard-pt.png)
 
 *Captura ilustrativa da vista de resultados com dados de exemplo — não significa que estes erros estejam presentes em todas as consolas.*
