@@ -1153,7 +1153,7 @@ class DoctorApp(tk.Tk):
                     raise ValueError("Indica um IP/nome de anfitrião válido e uma porta entre 1 e 65535.")
                 with socket.create_connection((host, port_num), timeout=2.5):
                     pass
-                checks.append(("Conectividade TCP", "ok", f"É possível abrir uma ligação TCP a {host}:{port_num}."))
+                checks.append(("Conectividade TCP", "ok", "É possível abrir uma ligação TCP ao destino indicado."))
             except Exception as exc:
                 checks.append(("Conectividade TCP", "fail", str(exc)))
 
@@ -1168,7 +1168,7 @@ class DoctorApp(tk.Tk):
 
             api_version = version.get("api_version", "não indicado")
             sm_version = version.get("shadowmount_version", "desconhecida")
-            checks.append(("API /api/v1/version", "ok", f"Versão API {api_version}; ShadowMountPlus {sm_version}."))
+            checks.append(("API /api/v1/version", "ok", f"API {api_version}; ShadowMountPlus {sm_version}."))
             capabilities = version.get("capabilities", [])
             capabilities = set(capabilities) if isinstance(capabilities, list) else set()
             probes = (
@@ -1211,7 +1211,7 @@ class DoctorApp(tk.Tk):
             self.api_version_var.set(tr("Versão da API: ") + str(version))
         ok_routes = sum(1 for _, state, _ in checks if state == "ok")
         self._set_conn_status("✅ Ligação confirmada")
-        self._set_api_info(f"API confirmada · {ok_routes} verificações bem-sucedidas. Consulta os detalhes para ver as capacidades disponíveis.")
+        self._set_api_info(f"{tr('API confirmada')} · {ok_routes} {tr('verificações bem-sucedidas')}. {tr('Consulta os detalhes para ver as capacidades disponíveis.')}")
         self._set_status("Ligação confirmada. Foram executados testes de leitura; a consola não foi alterada.", "ok")
         self._show_connection_diagnostics(checks, None)
 
@@ -1244,7 +1244,7 @@ class DoctorApp(tk.Tk):
             output.insert("end", tr("A API não respondeu como esperado") + "\n", "fail")
             output.insert("end", str(error) + "\n\n")
         for label, state, detail in checks:
-            marker = {"ok": "[OK]", "warn": "[ATENÇÃO]", "fail": "[FALHA]", "skip": "[NÃO ANUNCIADO]"}.get(state, "[INFO]")
+            marker = {"ok": "[OK]", "warn": f"[{tr('ATENÇÃO')}]", "fail": f"[{tr('FALHA')}]", "skip": f"[{tr('NÃO ANUNCIADO')}]"} .get(state, "[INFO]")
             output.insert("end", f"{marker} {tr(label)}\n", state)
             output.insert("end", f"  {tr(detail)}\n\n")
 
