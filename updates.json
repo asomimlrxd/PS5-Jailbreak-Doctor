@@ -1,20 +1,19 @@
 {
   "manifest_version": 1,
   "project": "PS5 Jailbreak Doctor",
-  "published_at": "2026-10-12",
-  "minimum_app_version": "0.8.3",
+  "published_at": "2026-10-17",
+  "minimum_app_version": "1.02",
   "knowledge_base": {
-    "database_version": "2026.10.12.5",
+    "database_version": "2026.10.17.1",
     "url": "https://raw.githubusercontent.com/asomimlrxd/PS5-Jailbreak-Doctor/main/knowledge_base.json",
-    "sha256": "6ec9005b35c085d5e37fb91a55f0d152f8fcd9e603978d640d5d3fa321627035",
-    "sources_reviewed_at": "2026-10-12",
+    "sha256": "8584da51286004eb1c51ea7f0b6826eb87b6d6b8d67bef28522649477f037e7d",
+    "sources_reviewed_at": "2026-10-17",
     "changelog": [
-      "Adds context-only compatibility notes for PFS experimental support and exact reported version combinations.",
-      "Updates the TitleDir/AppInstallAll rule to reflect the maintainer commit that restored hooks and closed issues #145/#147.",
-      "Expands scanner guidance for scanpath, scan_depth, source layout and manual.lst based on ShadowMountPlus 1.7 documentation.",
-      "Adds a rule for duplicate Title IDs and clarifies that a duplicate source is not proof of corruption.",
-      "Embeds English rule translations so verified knowledge-base updates can add/edit rules without rebuilding the app.",
-      "Adds report follow-up fields and compatibility/timeline metadata."
+      "Adds context-aware reports for the ShadowMountPlus HTTP API listener becoming unresponsive and scans remaining queued after game exit.",
+      "Adds official ShadowMountPlus 1.7beta5 runtime guidance; release notes are not treated as proof of a specific crash cause.",
+      "Updates TitleDir and ShellCore hook guidance for the 1.7beta5 automatic hook-recovery notes.",
+      "Retains the open state of issue #153 and PR #163; the proposed sandbox timeout is not labelled as a released fix.",
+      "The updater downloads only the diagnostic knowledge-base JSON after explicit user confirmation; no logs or console details are uploaded."
     ]
   },
   "privacy": {
