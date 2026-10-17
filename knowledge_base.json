@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "database_version": "2026.10.12.5",
-  "generated_at": "2026-10-12",
+  "database_version": "2026.10.17.1",
+  "generated_at": "2026-10-17",
   "language": "pt-PT",
-  "description": "Base de conhecimento local e expansível. Revisão de 2026-10-12: incorpora o estado atual de issues públicas do ShadowMountPlus, notas de compatibilidade por combinação exata, verificação da profundidade/caminhos de scan e deteção de Title IDs duplicados. Relatos comunitários não são tratados como correções universais; regras usam traduções incorporadas para permitir atualizações sem recompilar a aplicação.",
+  "description": "Base de conhecimento local e expansível. Revisão de 2026-10-17: incorpora notas oficiais do ShadowMountPlus 1.7beta5, relatos recentes sobre o listener HTTP que deixa de responder e varreduras presas após fechar jogos. Issues e pull requests abertos não são tratados como correções confirmadas.",
   "rules": [
     {
       "id": "SHADOW_TITLE_DIR",
@@ -17,7 +17,7 @@
         "appinstalltitle?dir bridge unavailable",
         "appinstallall hook is no longer installed"
       ],
-      "summary": "O ShadowMountPlus não conseguiu utilizar a interface/hook TitleDir/AppInstallAll durante o registo. Os issues #145 e #147 documentaram perda do hook após mudar de jogo ou retomar do modo de repouso; o mantenedor adicionou uma correção ao código e encerrou esses issues em 10 de outubro de 2026. Isso não garante que todas as builds distribuídas já incluam a alteração.",
+      "summary": "Relatos antigos descrevem perda do TitleDir/AppInstallAll bridge em builds anteriores. As notas oficiais do ShadowMountPlus 1.7beta5 anunciam recuperação automática dos hooks antes do registo de jogos. Confirma a build exata antes de tratar o erro como corrigido; a regra não garante que todas as variantes do problema tenham desaparecido.",
       "steps": [
         "Confirma a versão exata/build date do ShadowMountPlus. Verifica se a build instalada inclui a correção que repõe os hooks antes do registo (issues #145/#147).",
         "Identifica se o erro começou após modo de repouso, mudança de jogo ou arranque frio; guarda as linhas anteriores ao primeiro erro.",
@@ -28,10 +28,11 @@
       "evidence_status": "relato_comunitario_corrigido_no_codigo_posterior",
       "sources": [
         "https://github.com/drakmor/ShadowMountPlus/issues/145",
-        "https://github.com/drakmor/ShadowMountPlus/issues/147"
+        "https://github.com/drakmor/ShadowMountPlus/issues/147",
+        "https://github.com/drakmor/ShadowMountPlus/releases/tag/1.7beta5"
       ],
       "applicability": "Os relatos originais são de builds beta específicas (incluindo FW 13.40/13.60). A correção foi adicionada ao repositório a 10-10-2026; a versão exata em que foi distribuída deve ser confirmada no build instalado.",
-      "fix_summary": "Os issues #145 e #147 foram encerrados após um commit que restaura os hooks perdidos antes do registo. Confirma se a build instalada contém essa alteração; o workaround antigo não deve ser apresentado como fix universal.",
+      "fix_summary": "A versão 1.7beta5 anuncia recuperação dos hooks antes do registo. Se o erro persistir nessa build ou numa posterior, recolhe o log atualizado e consulta as issues ligadas.",
       "context_conditions": {
         "trigger": [
           "after_resume"
@@ -40,14 +41,14 @@
       "translations": {
         "en": {
           "title": "ShadowMountPlus: TitleDir bridge unavailable",
-          "summary": "ShadowMountPlus could not use the TitleDir/AppInstallAll hook during registration. Issues #145 and #147 documented the hook disappearing after a game switch or resuming from rest mode; the maintainer added a code fix and closed those issues on October 10, 2026. This does not guarantee every distributed build already contains the change.",
+          "summary": "Older reports describe loss of the TitleDir/AppInstallAll bridge in earlier builds. The official ShadowMountPlus 1.7beta5 notes announce automatic hook recovery before game registration. Confirm the exact build before treating the error as fixed; this does not guarantee every variant of the problem is gone.",
           "steps": [
             "Confirm the exact ShadowMountPlus version/build date. Check whether the installed build includes the fix that restores hooks before registration (issues #145/#147).",
             "Identify whether the error started after rest mode, a game switch, or a cold boot; save the lines before the first error.",
             "If you are using a build from before the fix, re-sending the payload once restored the hooks in the original reports. Treat this as a temporary recovery step, not a universal solution.",
             "If the error repeats on a build that includes the fix, collect an anonymized report and do not reinstall games as the first step."
           ],
-          "fix_summary": "Issues #145 and #147 were closed after a commit that restores lost hooks before registration. Confirm whether the installed build includes that change; the older workaround must not be presented as a universal fix.",
+          "fix_summary": "Version 1.7beta5 announces hook recovery before registration. If the error persists on that or a later build, collect an updated log and review the linked issues.",
           "applicability": "The original reports involve specific beta builds (including FW 13.40/13.60). The fix was added to the repository on 2026-10-10; confirm the exact release containing it from the installed build."
         }
       }
@@ -351,7 +352,7 @@
         "install(?:ing)? shellcore hooks.{0,50}(?:failed|error)",
         "sce.?shellcore.{0,50}hook.{0,50}(?:failed|error)"
       ],
-      "summary": "Falhas ao instalar hooks foram reportadas em várias builds beta e firmwares. Issues mais recentes (#145/#147) documentaram perda dos hooks durante a utilização; o mantenedor adicionou uma correção ao código em 10-10-2026. Confirma a build instalada antes de concluir que o problema continua por resolver.",
+      "summary": "As notas da versão oficial 1.7beta5 do ShadowMountPlus incluem recuperação automática dos hooks do ShellCore após a retoma e antes do registo do jogo. Um erro igual em versões anteriores pode ter sido corrigido na build beta5, mas confirma a versão exata e o resultado do log antes de concluir.",
       "steps": [
         "Confirma a versão exata do firmware, ShadowMountPlus e KStuff Lite e guarda o log de arranque completo.",
         "Faz um reinício completo da consola e carrega os payloads uma vez, sem os enviar repetidamente.",
@@ -363,21 +364,22 @@
       "sources": [
         "https://github.com/drakmor/ShadowMountPlus/issues/109",
         "https://github.com/drakmor/ShadowMountPlus/issues/145",
-        "https://github.com/drakmor/ShadowMountPlus/issues/147"
+        "https://github.com/drakmor/ShadowMountPlus/issues/147",
+        "https://github.com/drakmor/ShadowMountPlus/releases/tag/1.7beta5"
       ],
       "applicability": "Os relatos abrangem versões e firmwares diferentes; a correção do repositório não confirma, por si só, em que release foi distribuída.",
-      "fix_summary": "Confirma se o build tem o commit de reposição dos hooks. Um reinício/reenviar payload pode ajudar em builds anteriores, mas não é uma correção universal.",
+      "fix_summary": "Confirma se a consola utiliza ShadowMountPlus 1.7beta5 ou posterior. Se o erro persistir, não o declares resolvido apenas pela versão: recolhe o debug.log e compara com as issues do mantenedor.",
       "translations": {
         "en": {
           "title": "ShadowMountPlus could not install ShellCore hooks",
-          "summary": "Hook installation failures have been reported across beta builds and firmware versions. More recent issues (#145/#147) documented hooks being lost during use; the maintainer added a code fix on 2026-10-10. Confirm the installed build before concluding the problem is still unresolved.",
+          "summary": "The official ShadowMountPlus 1.7beta5 notes include automatic ShellCore hook recovery after resume and before game registration. The same error on older versions may have been fixed in beta5, but confirm the exact build and log result before concluding.",
           "steps": [
             "Confirm the exact firmware, ShadowMountPlus, and KStuff Lite versions and save the full startup log.",
             "Fully restart the console and load the payloads once, without repeatedly sending them.",
             "If it continues, test a clean startup with as few payloads as possible, changing one variable at a time.",
             "Do not replace system files or manually change offsets/hooks. Share the log with the maintainer."
           ],
-          "fix_summary": "Confirm whether the build contains the hook-restoration commit. A restart/reloading the payload may help on older builds, but is not a universal fix.",
+          "fix_summary": "Confirm whether the console runs ShadowMountPlus 1.7beta5 or later. If the error persists, do not mark it as fixed based on the version alone: collect debug.log and compare with the maintainer issues.",
           "applicability": "Reports cover different versions and firmware; a repository fix does not by itself confirm which release shipped it."
         }
       }
@@ -619,10 +621,12 @@
       "fix_type": "workaround_comunitario",
       "evidence_status": "relato_comunitario_aberto",
       "sources": [
-        "https://github.com/drakmor/ShadowMountPlus/issues/128"
+        "https://github.com/drakmor/ShadowMountPlus/issues/128",
+        "https://github.com/drakmor/ShadowMountPlus/issues/153",
+        "https://github.com/drakmor/ShadowMountPlus/pull/163"
       ],
       "applicability": "Relato em FW 13.60, KStuff Lite 1.11 e ShadowMountPlus 1.7beta3; observado num único sistema.",
-      "fix_summary": "Montagem manual voltou a funcionar num caso publicado; o erro pode ter outra causa noutros sistemas.",
+      "fix_summary": "A montagem manual resolveu um relato isolado na issue #128. Um problema relacionado de estado preso após fechar o jogo continua aberto na issue #153; a PR #163 propõe limitar a espera pela remoção do sandbox, mas não deve ser tratada como correção publicada enquanto não for integrada numa release.",
       "context_conditions": {
         "origin_type": [
           "folder"
@@ -641,7 +645,7 @@
             "If manual mounting is available in your version, use the ShadowMountPlus UI. Do not run unknown API commands.",
             "Attach the event timeline and debug.log to the maintainer's issue."
           ],
-          "fix_summary": "Manual mounting worked in one published case; the same error may have another cause on other systems.",
+          "fix_summary": "Manual mounting resolved one report in issue #128. A related stale state after game exit remains open in issue #153; PR #163 proposes bounding the sandbox-removal wait, but should not be treated as a released fix until it is merged into a release.",
           "applicability": "Report on FW 13.60, KStuff Lite 1.11, and ShadowMountPlus 1.7beta3; observed on one system."
         }
       }
@@ -1255,6 +1259,87 @@
           "applicability": "Based on the ShadowMountPlus 1.7 troubleshooting documentation; behavior can vary by version and source layout."
         }
       }
+    },
+    {
+      "id": "SHADOW_API_LISTENER_STALL",
+      "title": "ShadowMountPlus: a API HTTP deixa de responder",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "(?:api|http/json).{0,80}(?:listener|port).{0,100}(?:stops?|stopped|silently dies|unavailable|no longer accepts|not responding)",
+        "(?:10101|api listener).{0,80}(?:connection refused|not responding|unreachable)",
+        "connection refused.{0,100}(?:10101|shadowmount)"
+      ],
+      "summary": "Uma issue aberta descreve o listener HTTP/JSON de ShadowMountPlus 1.7-beta5fix1 a deixar de aceitar ligações na porta 10101 enquanto outros serviços da ferramenta continuam ativos. O caso foi observado em FW 13.20 e também coincidiu com uma alteração de IP LAN noutro momento. A causa exata não foi confirmada; a falha da API não prova que todo o payload deixou de funcionar.",
+      "steps": [
+        "Confirma o endereço e a porta usados pelo Doctor e se a API /api/v1/version responde. O endereço predefinido 127.0.0.1 só é acessível dentro da própria PS5.",
+        "Se a ligação falhar, regista a versão do ShadowMountPlus, firmware e se a consola continua a escrever debug.log ou a montar jogos. Não assumas que o payload inteiro parou.",
+        "Evita repetir alterações ao config.ini como tentativa automática de recuperação. Faz cópia da configuração antes de qualquer mudança manual e consulta a issue ligada.",
+        "Se o listener continuar indisponível, recolhe o debug.log por um método local autorizado e anexa os detalhes à issue do mantenedor."
+      ],
+      "fix_type": "diagnostico",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/152",
+        "https://github.com/drakmor/ShadowMountPlus/blob/1.7/docs/api.md"
+      ],
+      "applicability": "Relato aberto atualizado em 2026-10-14; observado em ShadowMountPlus 1.7-beta5fix1 / FW 13.20. Sem causa raiz ou correção confirmada no momento da revisão de 2026-10-17.",
+      "fix_summary": "A issue #152 descreve o listener a deixar de responder sem evidência de que o resto do payload parou. Ainda não há solução confirmada para todos os casos; este diagnóstico ajuda a recolher evidência sem alterar automaticamente a configuração.",
+      "translations": {
+        "en": {
+          "title": "ShadowMountPlus: the HTTP API stops responding",
+          "summary": "An open issue describes the ShadowMountPlus 1.7-beta5fix1 HTTP/JSON listener no longer accepting connections on port 10101 while other tool services remain active. The case was observed on FW 13.20; a LAN IP change also coincided with another occurrence. The exact cause is unconfirmed; API failure does not prove the whole payload stopped.",
+          "steps": [
+            "Confirm the address and port used by Doctor and whether /api/v1/version responds. The default 127.0.0.1 address is only reachable from the PS5 itself.",
+            "If the connection fails, record the ShadowMountPlus version, firmware, and whether the console still writes debug.log or mounts games. Do not assume the entire payload stopped.",
+            "Avoid repeatedly changing config.ini as an automatic recovery attempt. Back up the configuration before any manual change and review the linked issue.",
+            "If the listener remains unavailable, collect debug.log through an authorized local method and attach details to the maintainer issue."
+          ],
+          "applicability": "Open report updated 2026-10-14; observed on ShadowMountPlus 1.7-beta5fix1 / FW 13.20. No root cause or confirmed fix as of the 2026-10-17 review.",
+          "fix_summary": "Issue #152 describes the listener becoming unresponsive without evidence that the rest of the payload stopped. There is no confirmed solution for all cases yet; this finding helps collect evidence without automatically changing configuration."
+        }
+      }
+    },
+    {
+      "id": "SHADOW_SCAN_QUEUED_AFTER_GAME_EXIT",
+      "title": "A varredura fica em fila depois de fechar um jogo",
+      "severity": "Aviso",
+      "confidence": "Média",
+      "patterns": [
+        "\\bscan.{0,40}(?:queued|deferred)\\b",
+        "awaiting same-app handoff",
+        "(?:runtime_prepared|stale runtime_prepared|stale.{0,30}mounted).{0,100}(?:scan|game exited|queued|deferred)",
+        "(?:scan|manual\\.lst).{0,100}(?:deferred|queued).{0,100}(?:prepared|game|sandbox|exit)"
+      ],
+      "summary": "Uma issue aberta relata que, em FW 13.60 com ShadowMountPlus 1.7-beta5fix1, uma varredura continua em fila após fechar um jogo porque o estado de preparação/runtime não é finalizado. A PR #163 propõe limitar a espera pela remoção do sandbox a 10 segundos; continua a ser uma proposta enquanto não for integrada numa release. O relato não prova que todas as varreduras presas tenham a mesma causa.",
+      "steps": [
+        "Regista se fechaste o jogo através de Options → Close Game e se a interface continua a mostrar o título como montado/preparado.",
+        "Procura no debug.log mensagens como awaiting same-app handoff, game exited, finalizing stopped application, scan queued ou runtime_prepared.",
+        "Anota firmware, versão exata de ShadowMountPlus e KStuff Lite. Não alteres scan_depth nem apagues origens para tentar resolver um estado runtime preso.",
+        "Consulta a issue #153 e a PR #163. A proposta de correção ainda não deve ser tratada como parte da versão instalada enquanto não houver uma release que a inclua."
+      ],
+      "fix_type": "diagnostico",
+      "evidence_status": "relato_comunitario_aberto",
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/issues/153",
+        "https://github.com/drakmor/ShadowMountPlus/pull/163"
+      ],
+      "applicability": "Relato atualizado em 2026-10-16, FW 13.60 e ShadowMountPlus 1.7-beta5fix1. A PR #163 estava aberta quando a base foi revista em 2026-10-17.",
+      "fix_summary": "A PR #163 propõe um limite de tempo para finalizar o jogo depois de um sandbox persistir. Não está confirmada como correção publicada; recolhe a sequência temporal e as versões antes de alterar a configuração.",
+      "translations": {
+        "en": {
+          "title": "A scan remains queued after a game is closed",
+          "summary": "An open issue reports that on FW 13.60 with ShadowMountPlus 1.7-beta5fix1, a scan remains queued after closing a game because the prepared/runtime state is not finalized. PR #163 proposes bounding the sandbox-removal wait to 10 seconds; it remains a proposal until included in a release. The report does not prove every stuck scan has the same cause.",
+          "steps": [
+            "Record whether the game was closed using Options → Close Game and whether the interface still shows the title as mounted/prepared.",
+            "Look in debug.log for messages such as awaiting same-app handoff, game exited, finalizing stopped application, scan queued, or runtime_prepared.",
+            "Record the firmware and exact ShadowMountPlus/KStuff Lite versions. Do not change scan_depth or delete sources to try to resolve a stuck runtime state.",
+            "Review issue #153 and PR #163. Do not treat the proposed fix as part of the installed version until a release containing it is available."
+          ],
+          "applicability": "Report updated 2026-10-16 on FW 13.60 and ShadowMountPlus 1.7-beta5fix1. PR #163 was open when the database was reviewed on 2026-10-17.",
+          "fix_summary": "PR #163 proposes a timeout for finalizing a game when a sandbox persists. It is not confirmed as a released fix; collect the event timeline and versions before changing configuration."
+        }
+      }
     }
   ],
   "compatibility_matrix": [
@@ -1374,6 +1459,29 @@
           "title": "Check whether the installed build includes the hook-recovery fix",
           "status": "Issue closed after a code change",
           "summary": "Loss of the AppInstallAll/AppInstallTitleDir hook after resuming from rest mode was reported on ShadowMountPlus 1.7beta3/FW 13.40. The maintainer added a code change to restore the hooks before registration and closed the issue. The distributed version containing that change was not identified in the issue reviewed."
+        }
+      }
+    },
+    {
+      "id": "SM_BETA5_RUNTIME_GUIDANCE",
+      "title": "Notas de compatibilidade do ShadowMountPlus 1.7beta5",
+      "severity": "Informação",
+      "status": "Notas oficiais da release — confirma a combinação instalada",
+      "summary": "As notas oficiais da versão 1.7beta5 dizem que foi removida a pausa automática antiga do KStuff e o ajuste automático do atraso; recomendam a versão mais recente do KStuff e indicam não usar EtaHEN com esta build. Isto é orientação do mantenedor, não prova de causa para um crash específico. Regista a versão exata de todos os payloads antes de comparar resultados.",
+      "conditions": {
+        "shadowmount_version": [
+          "1.7beta5",
+          "1.7-beta5fix1"
+        ]
+      },
+      "sources": [
+        "https://github.com/drakmor/ShadowMountPlus/releases/tag/1.7beta5"
+      ],
+      "translations": {
+        "en": {
+          "title": "ShadowMountPlus 1.7beta5 compatibility notes",
+          "status": "Official release notes — confirm the installed combination",
+          "summary": "The official 1.7beta5 notes say the legacy KStuff auto-pause and delay autotuning were removed; they recommend the latest KStuff version and state not to use EtaHEN with this build. This is maintainer guidance, not proof of the cause of a specific crash. Record exact versions of all payloads before comparing results."
         }
       }
     }
