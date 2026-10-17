@@ -12,6 +12,10 @@ A aplicação não atualiza automaticamente o executável. O botão **Atualizar 
 
 O URL atual da base tem de ser `https://raw.githubusercontent.com/asomimlrxd/PS5-Jailbreak-Doctor/main/knowledge_base.json`. O atualizador rejeita URLs fora do repositório esperado, checksum incorreto, JSON inválido, IDs duplicados e regex que não compile.
 
+## Base publicada na versão 1.04
+
+A base fornecida com a versão 1.04 usa `database_version: 2026.10.17.1`. Inclui 32 regras e 5 notas de compatibilidade, com novos diagnósticos contextuais para o listener HTTP que deixa de responder e varreduras que ficam em fila depois de fechar um jogo. As issues #152/#153 e a PR #163 estão marcadas como casos abertos/proposta; não são apresentadas como correções publicadas.
+
 ## Segurança e privacidade
 
 A opção **Verificar scanner** usa apenas os endpoints de leitura `/api/v1/settings` e `/api/v1/manual/list` documentados no ShadowMountPlus 1.7. Não executa `/api/v1/scan`, não escreve definições e não altera origens. A aplicação verifica as capacidades anunciadas pelo endpoint `/api/v1/version` e trata endpoints ausentes como indisponíveis em vez de os interpretar como falha da ligação.
