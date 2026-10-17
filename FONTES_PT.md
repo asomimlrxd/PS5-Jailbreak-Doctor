@@ -1,6 +1,6 @@
 # Fontes da base de conhecimento — PS5 Jailbreak Doctor
 
-Revisão feita em 12-10-2026. A base contém erros documentados publicamente e heurísticas de log (30 regras nesta revisão). O repositório de issues muda com frequência; esta lista não significa que todos os casos continuem presentes nas versões mais recentes.
+Revisão feita em 17-10-2026. A base contém 32 regras e 5 notas de compatibilidade nesta revisão. O repositório de issues muda com frequência; esta lista não significa que todos os casos continuem presentes nas versões mais recentes.
 
 ## ShadowMountPlus
 
@@ -36,6 +36,14 @@ Revisão feita em 12-10-2026. A base contém erros documentados publicamente e h
 - [#76 — jogos falham com KStuff Lite 1.07 beta + SM+](https://github.com/drakmor/ShadowMountPlus/issues/76): caso específico; utilizador indicou que voltar a uma versão anterior de KStuff resolveu o seu cenário.
 - [Discussão de autoloader #14](https://github.com/itsPLK/ps5-y2jb-autoloader/discussions/14): relatos de crash ao carregar KStuff Lite 1.11 e crashes relacionados com estados de patches não oficiais de jogos PS4. O motor só usa isto como contexto de baixa confiança, não como prova causal.
 - [Erro “App crashed before KStuff pause” (relato comunitário)](https://www.reddit.com/r/PS5_Jailbreak/comments/1trvz79/app_crashed_before_kstuff_pause/): experiência comunitária; não é diagnóstico oficial.
+
+## Fontes acrescentadas na revisão de 17-10-2026
+
+- [Release oficial ShadowMountPlus 1.7beta5](https://github.com/drakmor/ShadowMountPlus/releases/tag/1.7beta5): as notas anunciam recuperação automática dos hooks após retoma e antes do registo; a release removeu o pause automático antigo do KStuff e recomenda usar KStuff atualizado. É orientação da release, não prova da causa de cada crash.
+- [#152 — listener HTTP/JSON deixa de aceitar ligações](https://github.com/drakmor/ShadowMountPlus/issues/152): reporta falha do listener na porta 10101 em 1.7-beta5fix1, enquanto outros serviços continuavam ativos. A causa exata não ficou confirmada na revisão.
+- [#153 — scan permanece em fila após fechar jogo](https://github.com/drakmor/ShadowMountPlus/issues/153): reporta estado runtime preparado/montado que impede novas varreduras em FW 13.60 e 1.7-beta5fix1.
+- [PR #163 — limitar a espera pela remoção do sandbox](https://github.com/drakmor/ShadowMountPlus/pull/163): proposta para limitar a espera; estava aberta na revisão de 17-10-2026 e não é tratada como correção já distribuída.
+- [#128 — jogo em pasta falha ao voltar a iniciar](https://github.com/drakmor/ShadowMountPlus/issues/128): um relato em FW 13.60/1.7beta3 no qual a montagem manual permitiu iniciar novamente. Resultado de um sistema, com causa não confirmada.
 
 ## Como a app interpreta as fontes
 
